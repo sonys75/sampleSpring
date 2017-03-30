@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="Login">
+    <typeAlias alias="voUserInfo" type="crawl.vo.VoUserInfo"/>
+    
+    <!-- 회원 정보 상세  -->
+    <select id="loginDAO.selectUserInfoByUserId" resultClass="voUserInfo">
+		SELECT /* loginDAO.selectUserInfoByUserId */
+		       A.USER_ID
+		      ,A.USER_NM
+		      ,A.USER_PW
+		      ,A.USER_EMAIL
+		      ,A.USER_HP
+		      ,C.AUTH_ID
+		      ,C.AUTH_NM
+		      ,A.USE_YN
+		      ,A.ACCESS_FAIL_CNT
+		      ,DATE_FORMAT(A.MOD_DT,'%Y-%m-%d %H:%I:%S') AS MOD_DT
+		      ,A.MOD_ID
+		      ,A.MOD_IP
+		      ,DATE_FORMAT(A.REG_DT,'%Y-%m-%d %H:%I:%S') AS REG_DT
+		      ,A.REG_ID
+		      ,A.REG_IP
+		  FROM USER_INFO A
+		  LEFT OUTER JOIN USER_AUTH B
+		               ON A.USER_ID = B.USER_ID
+		  LEFT OUTER JOIN AUTH C
+		               ON B.AUTH_ID = C.AUTH_ID
+		 WHERE A.USER_ID = #userId#
+    </select>
+    
+    <!-- 회원 정보 업데이트  -->
+	<update id="loginDAO.updateAccessFailCntInitByUserId" parameterClass="voUserInfo">
+		UPDATE USER_INFO /* loginDAO.updateAccessFailCntInitByUserId */
+		   SET ACCESS_FAIL_CNT = 0
+		 WHERE USER_ID = #user_id#
+	</update>
+    
+    <!-- 회원 로그인 실패 카운터 업데이트  -->
+	<update id="loginDAO.updateAccessFailCntByUserId" parameterClass="voUserInfo">
+		UPDATE USER_INFO /* loginDAO.updateAccessFailCntByUserId */
+		   SET ACCESS_FAIL_CNT = IFNULL(ACCESS_FAIL_CNT,0)+1
+		       <isNotEmpty property="use_yn" prepend=",">
+		       USE_YN = #use_yn#
+		       </isNotEmpty>
+		 WHERE USER_ID = #user_id#
+	</update>
+    
+    
+	<!-- 회원 정보 카운트  -->
+	<select id="Login.selectCntUserInfo" parameterClass="voUserInfo" resultClass="int">
+		SELECT /* selectCntUserInfo */
+		       COUNT(*) 
+		       AS CNT
+		  FROM USER_INFO
+		 WHERE 1=1
+		 <isNotEmpty property="sch_word">
+		 	<isEqual property="sch_fld" compareValue="user_id" prepend="AND">
+		 		USER_ID LIKE '%$sch_word$%'
+		 	</isEqual>
+		 	<isEqual property="sch_fld" compareValue="user_nm" prepend="AND">
+		 		USER_NM LIKE '%$sch_word$%'
+		 	</isEqual>
+		 </isNotEmpty>		 
+	</select>
+
+	<!-- 회원 정보 목록  -->
+    <select id="Login.selectListUserInfo" resultClass="voUserInfo">
+    	SELECT *
+    	  FROM (
+				SELECT /* selectListUserInfo */
+					   A.USER_ID
+					  ,A.USER_NM
+					  ,A.USER_PW
+					  ,DES_DECRYPT(UNHEX(A.USER_EMAIL), A.USER_ID) 
+					   AS USER_EMAIL
+					  ,DES_DECRYPT(UNHEX(A.USER_HP), A.USER_ID) 
+					   AS USER_HP
+					  ,A.USER_AUTH
+					  ,A.USE_YN		   
+					  ,A.MOD_ID
+					  ,A.MOD_IP
+					  ,A.REG_ID
+					  ,A.REG_IP
+					  ,DATE_FORMAT(A.MOD_DT,'%Y-%m-%d') AS MOD_DT
+					  ,DATE_FORMAT(A.REG_DT,'%Y-%m-%d') AS REG_DT
+					  ,@ROWNUM := @ROWNUM +1 
+				       AS ROWNO
+				  FROM USER_INFO A,(SELECT @ROWNUM := 0) AS ROWTAB
+				 WHERE 1=1 /*A.USER_ID NOT IN ('admin')*/
+				 <isNotEmpty property="sch_word">
+				 	<isEqual property="sch_fld" compareValue="user_id" prepend="AND">
+				 		A.USER_ID LIKE '%$sch_word$%'
+				 	</isEqual>
+				 	<isEqual property="sch_fld" compareValue="user_nm" prepend="AND">
+				 		A.USER_NM LIKE '%$sch_word$%'
+				 	</isEqual>
+				 </isNotEmpty>	
+				 ORDER BY A.USER_ID				  
+	    	   ) A
+    	 WHERE ROWNO BETWEEN #listPaging.startLine# AND #listPaging.endLine#	    	   
+    </select>
+    
+
+    
+    <!-- 회원 정보 인서트  -->
+    <insert id="Login.insertUserInfo" parameterClass="voUserInfo">
+		INSERT INTO USER_INFO /* insertUserInfo */
+		      (USER_ID
+			  ,USER_NM
+			  ,USER_PW
+			  ,USER_EMAIL
+			  ,USER_HP
+			  ,USER_AUTH
+			  ,USE_YN
+			  ,MOD_DT
+			  ,MOD_ID
+			  ,MOD_IP
+			  ,REG_DT
+			  ,REG_ID
+			  ,REG_IP)
+		VALUES
+		      (#user_id#
+		      ,#user_nm#
+		      ,#user_pw#
+		      ,(CASE #user_email# WHEN NULL THEN '' ELSE HEX(DES_ENCRYPT(#user_email#, #user_id# )) END)
+		      ,(CASE #user_hp# WHEN NULL THEN '' ELSE HEX(DES_ENCRYPT(#user_hp#, #user_id# )) END)
+		      ,#user_auth#
+		      ,'Y'
+		      ,NOW()
+		      ,#s_user_id#
+		      ,#s_user_ip#
+		      ,NOW()
+		      ,#s_user_id#
+		      ,#s_user_ip#
+		      )
+    </insert>
+	
+    <!-- 회원 정보 업데이트  -->
+	<update id="Login.updateUserInfoByUserId" parameterClass="voUserInfo">
+		UPDATE USER_INFO /* updateUserInfoByUserId */
+		   SET USER_NM = #user_nm#
+		   <isNotEmpty property="re_user_pw_confirm" prepend=",">
+		   	  USER_PW = #user_pw#
+		   </isNotEmpty>
+		      ,USER_EMAIL = (CASE #user_email# WHEN NULL THEN '' ELSE HEX(DES_ENCRYPT(#user_email#, #user_id# )) END)
+		      ,USER_HP = (CASE #user_hp# WHEN NULL THEN '' ELSE HEX(DES_ENCRYPT(#user_hp#, #user_id# )) END)
+		      ,USER_AUTH = #user_auth#
+		      ,USE_YN = #use_yn#
+		      ,MOD_DT = NOW()
+		      ,MOD_ID = #s_user_id#
+		      ,MOD_IP = #s_user_ip#
+		 WHERE USER_ID = #user_id#
+	</update>
+
+	<!-- 회원 정보 삭제  -->
+    <delete id="Login.deleteUserInfoByUserId" parameterClass="voUserInfo">
+		DELETE /* deleteUserInfoByUserId */
+		  FROM USER_INFO
+		 WHERE USER_ID = #user_id#
+    </delete>
+    
+	<!-- 검색어에 따른 회원 목록  -->
+    <select id="Login.selectSearchListUserInfo" resultClass="voUserInfo">
+		SELECT /* selectSearchListUserInfo */
+			   A.USER_ID
+			  ,A.USER_NM
+			  ,A.USER_PW
+			  ,DES_DECRYPT(UNHEX(A.USER_EMAIL), A.USER_ID) 
+			   AS USER_EMAIL
+			  ,DES_DECRYPT(UNHEX(A.USER_HP), A.USER_ID) 
+			   AS USER_HP
+			  ,A.USER_AUTH
+			  ,A.USE_YN
+			  ,A.MOD_ID
+			  ,A.MOD_IP
+			  ,A.REG_ID
+			  ,A.REG_IP
+			  ,DATE_FORMAT(A.MOD_DT,'%Y-%m-%d') AS MOD_DT
+			  ,DATE_FORMAT(A.REG_DT,'%Y-%m-%d') AS REG_DT
+		  FROM USER_INFO A
+		 WHERE 1=1
+		 AND USER_NM LIKE '%$user_nm$%'
+    </select>
+</sqlMap>
+
+

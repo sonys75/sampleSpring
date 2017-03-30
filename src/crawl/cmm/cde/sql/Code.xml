@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="Code">
+    <typeAlias alias="voAuth" type="crawl.vo.VoAuth"/>
+    <typeAlias alias="voCodeInfo" type="crawl.vo.VoCodeInfo"/>
+
+    <!-- 권한 조회  -->
+	<select id="selectAuthNo" resultClass="voAuth">
+	     SELECT /* selectAuthNo */
+	            AUTH_NO
+	           ,UP_AUTH_NO
+               ,AUTH_ID
+               ,AUTH_NM
+	       FROM AUTH
+	      WHERE AUTH_ID = #userAuth#
+	</select>
+	
+    <!-- 권한 조회  -->
+	<select id="selectAuthList" resultClass="voAuth">
+	     SELECT /* selectAuthList */
+	            *
+	       FROM (
+			     SELECT AUTH_NO
+			           ,UP_AUTH_NO
+			           ,1 AS LEVEL 
+	                   ,AUTH_ID
+	                   ,AUTH_NM
+			       FROM AUTH
+			      WHERE AUTH_NO = #authNo#
+			      UNION ALL
+			     SELECT D.AUTH_NO
+			           ,D.UP_AUTH_NO
+			           ,FUNC.LEVEL + 1 AS LEVEL
+	                   ,D.AUTH_ID
+	                   ,D.AUTH_NM
+			       FROM (
+			             SELECT AUTH_CONNECT_BY_PARENT() AS AUTH_NO
+			                   ,@LEVEL AS LEVEL
+			               FROM (
+			                     SELECT @START_WITH := #authNo#
+			                           ,@ID := @START_WITH
+			                           ,@LEVEL := 0
+			                    ) VARS
+			                   ,AUTH
+			              WHERE @ID IS NOT NULL
+			            ) FUNC
+			       JOIN AUTH D
+			         ON FUNC.AUTH_NO = D.AUTH_NO
+	            ) Z
+	      ORDER BY Z.AUTH_NO
+	</select>
+	
+    <!-- 코드 정보 목록  -->
+    <select id="selectListCodeInfoByCodePart" resultClass="voCodeInfo">
+		SELECT /* selectListCodeInfoByCodePart */
+		       A.CODE_PART
+		      ,B.CODE_PART_NM
+		      ,A.CODE
+			  ,A.CODE_NM
+			  ,A.CODE_DESC
+			  ,A.CODE_ORD
+		      ,DATE_FORMAT(A.MOD_DT, '%Y-%m-%d %H:%i:%s') AS MOD_DT
+		      ,A.MOD_ID
+		      ,A.MOD_IP
+		      ,DATE_FORMAT(A.REG_DT, '%Y-%m-%d %H:%i:%s') AS REG_DT
+		      ,A.REG_ID
+		      ,A.REG_IP
+		  FROM CODE_INFO A
+         INNER JOIN CODE_PART B
+                 ON A.CODE_PART = B.CODE_PART
+		 WHERE A.CODE_PART = #codePart#
+		 ORDER BY A.CODE_PART,A.CODE_ORD
+    </select>
+    
+	<!-- 서버주소를 얻어온다 -->
+	<select id="selectServerUrl" resultClass="java.lang.String">
+		SELECT /* selectServerUrl */
+		       CODE_DESC 
+		  FROM CODE_INFO
+		 WHERE CODE_PART='SVRENV'
+		   AND CODE = 'SERVER_URL'
+	</select>
+</sqlMap>
+
+

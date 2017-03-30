@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="MyPage">
+    <typeAlias alias="voUserInfo" type="crawl.vo.VoUserInfo"/>
+
+    <!-- 회원 정보 상세  -->
+    <select id="myPageDAO.selectUserInfoByUserId" resultClass="voUserInfo">
+		SELECT /* myPageDAO.selectUserInfoByUserId */
+		       A.USER_ID
+		      ,A.USER_NM
+		      ,A.USER_PW
+		      ,A.USER_EMAIL
+		      ,A.USER_HP
+		      ,C.AUTH_ID
+		      ,C.AUTH_NM
+		      ,A.USE_YN
+		      ,A.ACCESS_FAIL_CNT
+		      ,DATE_FORMAT(A.MOD_DT,'%Y-%m-%d %H:%I:%S') AS MOD_DT
+		      ,A.MOD_ID
+		      ,A.MOD_IP
+		      ,DATE_FORMAT(A.REG_DT,'%Y-%m-%d %H:%I:%S') AS REG_DT
+		      ,A.REG_ID
+		      ,A.REG_IP
+		  FROM USER_INFO A
+		  LEFT OUTER JOIN USER_AUTH B
+		               ON A.USER_ID = B.USER_ID
+		  LEFT OUTER JOIN AUTH C
+		               ON B.AUTH_ID = C.AUTH_ID
+		 WHERE A.USER_ID = #userId#
+    </select>
+ 
+    	<!-- 개인정보수정  -->
+	<update id="myPageDAO.updateUserInfoByUserIdPW">
+		UPDATE USER_INFO /* myPageDAO.updateUserInfoByUserIdPW */
+		   SET MOD_DT = NOW()
+		   <isNotEmpty property="userRePw">
+		   	  ,USER_PW = #userRePw#
+		   </isNotEmpty>
+		      ,USER_EMAIL = #userEmail#
+		      ,USER_HP = #userHp#
+		      ,USER_TEL = #userTel#
+		      ,MOD_ID = #userId#
+		      ,MOD_IP = #userIp#
+		 WHERE USER_ID = #userId#
+		   AND USER_PW = #userPw#
+	</update>
+</sqlMap>
+
+

@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project basedir="." default="main" name="card.truck.or.kr">
+	<property environment="env" />
+	<property name="class.dir" value="WebContent/WEB-INF/classes" />
+	<property name="dist.dir" value="build" />
+	<property name="dist.was.dir" value="${dist.dir}/WAS" />
+	<property name="dist.web.dir" value="${dist.dir}/WEB" />
+	<property name="was.jar.file" value="${dist.dir}/${ant.project.name}_was.jar" />
+	<property name="web.jar.file" value="${dist.dir}/${ant.project.name}_web.jar" />
+	<property name="debuglevel" value="source,lines,vars" />
+	<property name="target" value="1.7" />
+	<property name="source" value="1.7" />
+
+	<!-- OS 체크 -->
+	<target name="checkos">
+		<condition property="isWindows">
+			<os family="windows" />
+		</condition>
+		<condition property="isLinux">
+			<os family="unix" />
+		</condition>
+		<echo message="checkos :: ${os.name}-${os.arch}-${os.version}" />
+	</target>
+
+	<target name="if_windows" depends="checkos" if="isWindows">
+		<property name="waslib.home" value="C:/WebDev_EGOV_Luna/Server/apache-tomcat-8.0.37/lib" />
+		<path id="javaLib">
+			<fileset dir="${waslib.home}" includes="*.jar" />
+		</path>
+	</target>
+
+	<target name="if_unix" depends="checkos" if="isLinux">
+		<property name="waslib.home" value="/home/tmax/jeus7/lib/system" />
+		<path id="javaLib">
+			<fileset dir="${waslib.home}" includes="*.jar" />
+		</path>
+	</target>
+				
+	<path id="Web.libraryclasspath">
+		<fileset dir="WebContent/WEB-INF/lib" includes="*.jar" />
+	</path>
+
+	<path id="kr.or.truck.classpath">
+		<pathelement location="${class.dir}" />
+		<path refid="javaLib" />
+		<path refid="Web.libraryclasspath" />
+	</path>
+
+	<!-- OS에 따른 클래스 패스 설정 -->
+	<target name="checksw_path" depends="if_windows, if_unix" />
+
+	<!-- 컴파일된 클래스 파일 및 디렉토리 삭제 -->
+	<target name="clean" depends="checksw_path">
+		<delete dir="${class.dir}" />
+		<delete dir="${dist.dir}" />
+		<delete dir="${dist.was.dir}" />
+		<delete dir="${dist.web.dir}" />
+	</target>
+
+	<!-- 클래스 디렉토리 초기화 -->
+	<target name="init" depends="clean">
+		<mkdir dir="${dist.dir}" />
+		<mkdir dir="${dist.was.dir}" />
+		<mkdir dir="${dist.web.dir}" />
+		<mkdir dir="WebContent/WEB-INF/classes" />
+		<copy includeemptydirs="false" todir="${class.dir}">
+			<fileset dir="src">
+				<exclude name="**/*.java" />
+			</fileset>
+		</copy>
+	</target>
+
+	<!-- 프로젝트 빌드 -->
+	<target name="compile" depends="init">
+		<echo message="${ant.project.name}: ${ant.file}" />
+		<javac debug="true" debuglevel="${debuglevel}" destdir="${class.dir}" includeantruntime="false" source="${source}" target="${target}" encoding="UTF-8">
+			<src path="src" />
+			<classpath refid="kr.or.truck.classpath" />
+		</javac>
+	</target>
+
+	<!-- WEB 서버 배포용 파일 복사 -->
+	<target name="webdist" depends="compile">
+		<copy includeemptydirs="false" todir="${dist.web.dir}">
+			<fileset dir="WebContent">
+				<exclude name="WEB-INF/**/*" />
+				<exclude name="**/*.xml" />
+				<exclude name="**/*.jar" />
+				<exclude name="**/*.jsp" />
+				<exclude name="**/*.java" />
+				<exclude name="**/*.class" />
+				<exclude name="**/*.tld" />
+			</fileset>
+		</copy>
+	</target>
+
+	<!-- WAS 서버 배포용 파일 복사 -->
+	<target name="wasdist" depends="webdist">
+		<copy includeemptydirs="false" todir="${dist.was.dir}">
+			<fileset dir="WebContent">
+				<include name="WEB-INF/lib/**/*.jar" />
+				<include name="**/*.xml" />
+				<include name="**/*.properties" />
+				<include name="**/*.password" />
+				<include name="**/*.jar" />
+				<include name="**/*.jsp" />
+				<include name="**/*.tld" />
+				<include name="**/*.sh" />
+				<include name="**/*.bat" />
+				<include name="**/*.class" />
+			</fileset>
+		</copy>
+	</target>
+
+	<target name="main" depends="wasdist" />
+</project>
+

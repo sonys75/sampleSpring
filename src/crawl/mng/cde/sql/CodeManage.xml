@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="CodeManage">
+    <typeAlias alias="voCodeInfo" type="crawl.vo.VoCodeInfo"/>
+
+    <!-- 코드 분류 카운트 조회  -->
+	<select id="selectCntCodePart" resultClass="int">
+	     SELECT /* selectCntCodePart */
+	            COUNT(*) 
+	            AS CNT
+	       FROM CODE_PART
+	      WHERE 1=1
+		 <isNotEmpty property="sch_word">
+		 	<isNotEmpty property="sch_fld" prepend="AND">
+		 		$sch_fld$ LIKE '%$sch_word$%'
+		 	</isNotEmpty>
+		 </isNotEmpty>	
+	</select>
+	
+    <!-- 코드 분류 목록 조회  -->
+	<select id="selectListCodePart" resultClass="voCodeInfo">
+		SELECT /* selectListCodePart */
+		       *
+		  FROM (
+		        SELECT A.CODE_PART
+		              ,A.CODE_PART_NM
+		              ,A.MOD_DT
+		              ,A.MOD_ID
+		              ,A.MOD_IP
+		              ,A.REG_DT
+		              ,A.REG_ID
+		              ,A.REG_IP 
+		              ,@ROWNUM := @ROWNUM + 1 
+                       AS ROWNO
+		          FROM (
+		                SELECT CODE_PART
+		                      ,CODE_PART_NM
+		                      ,MOD_DT
+		                      ,MOD_ID
+		                      ,MOD_IP
+		                      ,DATE_FORMAT(REG_DT, '%Y-%m-%d') AS REG_DT
+		                      ,REG_ID
+		                      ,REG_IP
+		                 FROM CODE_PART
+		                WHERE 1=1
+					 <isNotEmpty property="sch_word">
+					 	<isNotEmpty property="sch_fld" prepend="AND">
+					 		$sch_fld$ LIKE '%$sch_word$%'
+					 	</isNotEmpty>
+					 </isNotEmpty>	
+		                ORDER BY CODE_PART
+		               ) A
+		              ,(SELECT @ROWNUM := 0) AS ROWTAB
+		       ) Z
+		 WHERE ROWNO BETWEEN #startRow# AND #endRow#
+	</select>
+	
+    <!-- 코드 분류 상세 조회  -->
+	<select id="selectCodePartByCodePart" resultClass="voCodeInfo">
+        SELECT /* selectCodePartByCodePart */
+               CODE_PART
+              ,CODE_PART_NM
+              ,MOD_DT
+              ,MOD_ID
+              ,MOD_IP
+              ,DATE_FORMAT(REG_DT, '%Y-%m-%d') AS REG_DT
+              ,REG_ID
+              ,REG_IP
+         FROM CODE_PART
+        WHERE CODE_PART = #codePart#
+	</select>
+	
+	<!-- 코드 분류 인서트  -->
+    <insert id="insertCodePart">
+		INSERT INTO CODE_PART /* insertCodePart */
+		      (CODE_PART
+		      ,CODE_PART_NM
+		      ,MOD_DT
+		      ,MOD_ID
+		      ,MOD_IP
+		      ,REG_DT
+		      ,REG_ID
+		      ,REG_IP
+		      )
+		VALUES
+		      (#codePart#
+		      ,#codePartNm#
+		      ,NOW()
+		      ,#regUserId#
+		      ,#userIp#
+		      ,NOW()
+		      ,#regUserId#
+		      ,#userIp#
+		      )
+    </insert>
+    
+    <!-- 코드 분류 업데이트  -->
+	<update id="updateCodePartByCodePart">
+		UPDATE CODE_PART /* updateCodePartByCodePart */
+		   SET CODE_PART_NM = #codePartNm#
+		      ,MOD_DT = NOW()
+		      ,MOD_ID = #regUserId#
+		      ,MOD_IP = #userIp#
+		 WHERE CODE_PART = #codePart#
+	</update>
+	
+	<!-- 코드 분류 삭제  -->
+    <delete id="deleteCodePartByCodePart">
+		DELETE /* deleteCodePartByCodePart */
+		  FROM CODE_PART
+		 WHERE CODE_PART = #codePart#
+    </delete> 
+    
+    <!-- 코드 카운트 조회  -->
+	<select id="selectCntCodeInfo" resultClass="int">
+	     SELECT /* selectCntCodeInfo */
+	            COUNT(*) 
+	            AS CNT
+	       FROM CODE_INFO
+	      WHERE 1=1
+		 <isNotEmpty property="sch_word">
+		 	<isNotEmpty property="sch_fld" prepend="AND">
+		 		$sch_fld$ LIKE '%$sch_word$%'
+		 	</isNotEmpty>
+		 </isNotEmpty>	
+	</select>
+	
+    <!-- 코드 목록 조회  -->
+	<select id="selectListCodeInfo" resultClass="voCodeInfo">
+		SELECT /* selectListCodeInfo */
+		       *
+		  FROM (
+		        SELECT A.CODE_PART
+		              ,A.CODE_PART_NM
+		              ,A.CODE
+		              ,A.CODE_NM
+		              ,A.CODE_ORD
+		              ,A.CODE_DESC
+		              ,A.MOD_DT
+		              ,A.MOD_ID
+		              ,A.MOD_IP
+		              ,A.REG_DT
+		              ,A.REG_ID
+		              ,A.REG_IP 
+		              ,@ROWNUM := @ROWNUM + 1 
+                       AS ROWNO
+		          FROM (
+		                SELECT C.CODE_PART
+		                      ,(SELECT CODE_PART_NM
+						          FROM CODE_PART
+						         WHERE CODE_PART = C.CODE_PART)
+						       AS CODE_PART_NM
+		                      ,C.CODE
+		                      ,C.CODE_NM
+		                      ,C.CODE_ORD
+		                      ,C.CODE_DESC
+		                      ,DATE_FORMAT(C.MOD_DT, '%Y-%m-%d') AS MOD_DT
+		                      ,C.MOD_ID
+		                      ,C.MOD_IP
+		                      ,DATE_FORMAT(C.REG_DT, '%Y-%m-%d') AS REG_DT
+		                      ,C.REG_ID
+		                      ,C.REG_IP
+		                 FROM CODE_INFO C
+		                WHERE 1=1
+					 <isNotEmpty property="sch_word">
+					 	<isNotEmpty property="sch_fld" prepend="AND">
+					 		C.$sch_fld$ LIKE '%$sch_word$%'
+					 	</isNotEmpty>
+					 </isNotEmpty>	
+		                ORDER BY C.CODE_PART
+		                        ,C.CODE_ORD  
+		               ) A
+		              ,(SELECT @ROWNUM := 0) AS ROWTAB
+		       ) Z
+		 WHERE ROWNO BETWEEN #startRow# AND #endRow#
+	</select>
+	
+    <!-- 코드 목록 조회  -->
+	<select id="selectListCodeInfoByCodePart" resultClass="voCodeInfo">
+		SELECT /* selectListCodeInfoByCodePart */
+		       A.CODE_PART
+		      ,(SELECT CODE_PART_NM
+		          FROM CODE_PART
+		         WHERE CODE_PART = A.CODE_PART)
+		       AS CODE_PART_NM
+              ,A.CODE
+              ,A.CODE_NM
+              ,A.CODE_ORD
+              ,A.CODE_DESC
+              ,DATE_FORMAT(A.MOD_DT, '%Y-%m-%d') AS MOD_DT
+              ,A.MOD_ID
+              ,A.MOD_IP
+              ,DATE_FORMAT(A.REG_DT, '%Y-%m-%d') AS REG_DT
+              ,A.REG_ID
+              ,A.REG_IP
+         FROM CODE_INFO A
+        WHERE A.CODE_PART = #codePart#
+        ORDER BY A.CODE_ORD
+	</select>
+	
+    <!-- 코드 상세 조회  -->
+	<select id="selectCodeInfoByCode" resultClass="voCodeInfo">
+		SELECT /* selectCodeByCode */
+		       A.CODE_PART
+		      ,(SELECT CODE_PART_NM
+		          FROM CODE_PART
+		         WHERE CODE_PART = A.CODE_PART)
+		       AS CODE_PART_NM
+              ,A.CODE
+              ,A.CODE_NM
+              ,A.CODE_ORD
+              ,A.CODE_DESC
+              ,DATE_FORMAT(A.MOD_DT, '%Y-%m-%d') AS MOD_DT
+              ,A.MOD_ID
+              ,A.MOD_IP
+              ,DATE_FORMAT(A.REG_DT, '%Y-%m-%d') AS REG_DT
+              ,A.REG_ID
+              ,A.REG_IP
+         FROM CODE_INFO A
+        WHERE A.CODE_PART = #codePart#
+        <isNotEmpty property="code">
+          AND A.CODE = #code#
+        </isNotEmpty>
+	</select>
+	
+	<!-- 코드 인서트  -->
+    <insert id="insertCodeInfo">
+		INSERT INTO CODE_INFO /* insertCodeInfo */
+		      (
+		       CODE_PART
+		      ,CODE
+              ,CODE_NM
+              ,CODE_ORD
+              ,CODE_DESC
+		      ,MOD_DT
+		      ,MOD_ID
+		      ,MOD_IP
+		      ,REG_DT
+		      ,REG_ID
+		      ,REG_IP
+		      )
+		VALUES
+		      (
+		       #codePart#
+		      ,#code#
+              ,#codeNm#
+              ,#codeOrd#
+              ,#codeDesc#
+		      ,NOW()
+		      ,#regUserId#
+		      ,#userIp#
+		      ,NOW()
+		      ,#regUserId#
+		      ,#userIp#
+		      )
+    </insert>
+    
+    <!-- 코드 업데이트  -->
+	<update id="updateCodeInfoByCode">
+		UPDATE CODE_INFO /* updateCodeInfoByCode */
+		   SET CODE_NM = #codeNm#
+		      ,CODE_ORD = #codeOrd#
+		      ,CODE_DESC = #codeDesc#
+		      ,MOD_DT = NOW()
+		      ,MOD_ID = #regUserId#
+		      ,MOD_IP = #userIp#
+		 WHERE CODE_PART = #codePart#
+		   AND CODE = #code#
+	</update>
+	
+	<!-- 코드 삭제  -->
+    <delete id="deleteCodeInfoByCode">
+		DELETE /* deleteCodeInfoByCode */
+		  FROM CODE_INFO
+		 WHERE CODE_PART = #codePart#
+		   AND CODE = #code#
+    </delete> 
+</sqlMap>
+
+

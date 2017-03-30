@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    - DispatcherServlet application context for Application's web tier.
+-->
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:p="http://www.springframework.org/schema/p" xmlns:context="http://www.springframework.org/schema/context"
+        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+                http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd">
+
+    <!--
+        - The controllers are autodetected POJOs labeled with the @Controller annotation.
+    -->
+    <context:component-scan base-package="crawl,resources">
+        <context:include-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Service"/>
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Repository"/>
+    </context:component-scan>
+
+    <!-- 전자정부 프레임워크에 있는 CommandMapArgumentResolver 사용 -->
+    <bean class="resources.com.annotation.ComRequestHandlerAdapter">
+        <property name="customArgumentResolvers">
+            <list>
+                <bean class="resources.com.annotation.ComArgumentResolver" />
+            </list>
+        </property>
+    </bean>
+
+	<!-- ReqeustMapping 과 Controller 클래스 매핑을 위한 annotation mvc 설정 -->
+    <bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping"/>
+
+    <!-- 서블릿컨네이너상의 exception에 대한 오류 페이지를 연결하는 mvc 설정 -->
+    <bean class="org.springframework.web.servlet.handler.SimpleMappingExceptionResolver">
+        <property name="defaultErrorView" value="cmm/err/exception"/>
+        <property name="exceptionMappings">
+            <props>
+                <prop key=".DataAccessException">cmm/err/dataAccessException</prop>
+                <prop key=".TransactionException">cmm/err/transactionException</prop>
+                <!-- <prop key="egovframework.rte.fdl.cmmn.exception.EgovBizException">cmm/err/exception</prop> -->
+                <prop key=".AccessDeniedException">cmm/err/accessDeniedException</prop>
+            </props>
+        </property>
+    </bean>
+    
+    <!-- ============================================================= -->
+    <!-- View Resolvers                                                -->
+    <!-- ============================================================= -->
+    <bean id="beanNameResolver" class="org.springframework.web.servlet.view.BeanNameViewResolver" p:order="0" />
+
+	<bean id="tilesViewResolver" class="org.springframework.web.servlet.view.UrlBasedViewResolver">
+		<property name="viewClass" value="org.springframework.web.servlet.view.tiles2.TilesView" />
+		<property name="order" value="1"/>
+	</bean>    
+	
+	<bean id="viewResolver" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="viewClass" value="org.springframework.web.servlet.view.JstlView"/>
+		<property name="prefix" value="/WEB-INF/jsp/"/>
+		<property name="suffix" value=".jsp"/>
+		<property name="order" value="2" />
+	</bean>
+
+    <!-- ============================================================= -->
+    <!--  JSON 뷰                                                      -->
+    <!-- ============================================================= -->
+	<bean id="jsonView" class="org.springframework.web.servlet.view.json.MappingJacksonJsonView"/>
+ 
+</beans>

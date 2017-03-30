@@ -1,0 +1,159 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<title>Send HTML Form as JSON</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<!-- 
+<script src="http://crypto-js.googlecode.com/svn/tags/3.1.2/build/rollups/aes.js"></script>
+<script>
+var key = "evansoftManage12";
+var iv = CryptoJS.enc.Hex.parse('101112131415161718191a1b1c1d1e1f');
+
+var encrypted = CryptoJS.AES.encrypt("test", key, { iv: iv });
+var decrypted = CryptoJS.AES.decrypt(encrypted, key, { iv: iv });
+
+document.write("<br/>iv :"+iv);
+document.write("<br/>ciphertext :"+encrypted.ciphertext);
+document.write("<br/>encrypted :"+encrypted);
+document.write("<br/>decrypted :"+decrypted.toString(CryptoJS.enc.Utf8));
+</script>
+ -->
+<script src="/js/jquery-1.9.1.js"></script>
+<script type="text/javascript">
+	$(document).ready(function() {
+		$("#modify").click(function(e) {
+			$("#msg").hide();
+			$("#body").show();
+		});
+		
+		$("#msg").hide();
+		$("#btn").click(function(e) {
+			$("#response").hide();
+ 
+ 			var data = $('#myform').serialize() ;
+			console.log("data : "+data);
+			
+			$.ajax({
+				url : document.getElementById("Url").value,
+				
+				contentType: document.getElementById("contType").value,
+				data : data,
+
+			    type : document.getElementById("method").value,
+				success : function(data, textStatus, jqXHR) {
+					var resJson = JSON.stringify(data);
+					console.log("response data : "+resJson);
+					$("#response").text(textStatus);
+					$("#response").append("<br>"+resJson );
+					/* $("#response").append("<br>"+data.data ); */
+					$("#response").show();
+				},
+				error: function (jqXHR, status) {
+	                alert("error: "+JSON.stringify(jqXHR));
+	            }
+			});
+			//$("#body").hide();
+			$("#msg").show();
+			e.preventDefault();
+		});
+
+	});
+</script>
+</head>
+
+<body>
+	<div id="body">
+		<div id="header">Send Form's data </div>
+		<fieldset>
+		<legend>샘플 전송 양식 Ajax Form </legend>
+		<p>
+		Request-Url : 
+		<input required="required" type="text" value="/syc/rst/service.do" id="Url" size="50" />
+		<br>
+		Content-Type : 
+		<select id="contType">
+			<option value="application/json">application/json</option>
+			<option value="application/x-www-form-urlencoded" selected="selected">application/x-www-form-urlencoded</option>
+			<option value="application/xml">application/xml</option>
+			<option value="multipart/form-data">multipart/form-data</option>
+			<option value="text/html">text/html</option>
+			<option value="text/plain">text/plain</option>
+		</select>
+		<br>
+		Method : 
+		<select id="method">
+			<option value="POST" selected="selected">POST</option>
+			<option value="GET">GET</option>
+			<option value="PUT">PUT</option>
+			<option value="OPTIONS">OPTIONS</option>
+		</select>
+		</p>
+		<hr>
+		<form id="myform" >
+			<div class="elements">
+				<label for="reqType">요청코드 :</label> 
+				<select name="reqType">
+					<option value="reqStpID">셋탑아이디 생성 요청</option>
+					<option value="reqStpInfo">셋탑 정보 요청</option>
+					<option value="reqPlayVer">재생목록 요청</option>
+					<option value="reqPlayFile">재생목록 파일요청</option>
+					<option value="reqFileTxt">재생목록 안내 정보요청</option>
+					<option value="reqNewsRss" selected="selected">뉴스서비스 요청</option>
+				</select>
+			</div>
+			<div class="elements">
+				<label for="macAddr">맥어드레스 :</label> 
+				<input required="required" type="text" value="00:C3:42:B4:AF:3A" name="macAddr" size="20" />
+			</div>
+			<div class="elements">
+				<label for="macType">맥어드레스구분 :</label>
+				<select name="macType">
+					<option value="WIFI">WIFI</option>
+					<option value="LAN" selected="selected">LAN</option>
+					<option value="MOBILE">MOBILE</option>
+				</select>
+			</div>
+			<div class="elements">
+				<label for="stpId">기기ID :</label>
+				<input type="text" value="1448657964" name="stpId" size="20" />
+			</div>
+			<div class="elements">
+				<label for="verId">버전ID :</label>
+				<input type="text" value="" name="verId" size="20" />
+			</div>
+			<div class="elements">
+				<label for="lastModDt">최종수정일 :</label>
+				<input type="text" value="20151128055924" name="lastModDt" size="20" />
+			</div>
+			<div class="elements">
+				<label for="appOs">appOs :</label>
+				<input type="text" value="ANDROID" name="appOs" size="20" />
+			</div>
+			<div class="elements">
+				<label for="appNm">appName :</label>
+				<input type="text" value="" name="appNm" size="20" />
+			</div>
+			<div class="elements">
+				<label for="appVer">appVer :</label>
+				<input type="text" value="2.1.5" name="appVer" size="20" />
+			</div>
+			
+			<div class="elements">
+				<label for="data">data :</label>
+				<input type="text" value="Kyf5gxYLosLFBk/JUPyAb8p5/k1A9f/wb3psF6VN54V6jWwGdOI5f+MmDs6c40mzvQFCRtAIO6o+IoqVUP17UdcCGYnMJHGr30oio6by7HWISzjWTwhlNI322RO3Yl5soO4LCvlsF0TCtF3+Av7oo4cl24u8StkparPEfNTzlgyyok2UT7+NOxBIp1aFJ0j0PTdZB5PS1YHNMsK3azLyOg==" name="data" size="20" />
+			</div>
+			<hr>
+			<div class="submit">
+				<input type="button" id="btn" name="btn" class="btn" value="전송" />
+			</div>
+			<span class="elements">Press "Ctrl + Shift + J" to see sent JSON in console: </span>
+			</form>
+		</fieldset>
+	</div>
+	<div id="msg">
+		<p>Response From Server</p>
+		<div id="response"></div>
+	</div>	
+</body>
+</html>

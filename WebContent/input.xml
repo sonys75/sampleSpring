@@ -1,0 +1,30 @@
+<xml>
+     <Item type="ItemHeader" name="Plan Features" id="id_1"></Item>
+<Item type="Deductible" name="Deductible" id="a">Calendar Year
+<Item type="Text" name="Individual" id="b">200</Item>
+<Item type="Text" name="Family" id="c">350</Item>
+</Item>
+<Item lock="|delete|" type="Empty" name="Out-of-Pocket Annual Maximum" id="id_2">
+<Item type="Text" name="Individual" id="d">400</Item>
+<Item type="Currency" name="Individual Out-of-Network" id="id_5">$320.00</Item>
+<Item type="Text" name="Family" id="e">670</Item>
+</Item>
+<Item type="Text" name="Life Time Maximum" id="u">8000</Item>
+<Item type="Text" name="Coinsurance" id="f">60</Item>
+<Item type="Text" name="Office Visits" id="g">10</Item>
+<Item type="Text" name="Routine Physicals" id="h">12</Item>
+<Item type="Text" name="Preventive Care" id="m"></Item>
+<Item type="Text" name="Physician Services" id="i"></Item>
+<Item type="Text" name="Emergency Room Services / Urgent Care" id="j"></Item>
+<Item type="Text" name="Hospital Admission Services" id="k"></Item>
+<Item type="Text" name="Chiropractic" id="n"></Item>
+<Item type="Text" name="Prescription Drugs" id="l"></Item>
+<Item type="Text" name="Specialty Drugs" id="o"></Item>
+<Item type="Currency" name="Custom Field 2" id="id_4">$250.00</Item>
+<Item type="Boolean" name="Pre Tax Reduction Available" id="t">false</Item>
+<Item type="Boolean" name="Conversion Privilege" id="p">false</Item>
+<Item type="ItemHeader" name="Plan Setup" id="id_3"></Item>
+<Item type="Termination" name="Benefit Termination Date" id="q">Immediate</Item>
+<Item type="Determination" name="Premium Redetermination Date" id="r">Not Applicable</Item>
+<Item type="Participation" name="Participation Requirement" id="s"></Item>
+</xml>

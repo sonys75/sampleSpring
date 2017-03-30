@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="Resource">
+    <typeAlias alias="voReso" type="crawl.vo.VoReso"/>
+
+    <!-- 자원 정보 카운트  -->
+	<select id="selectCntReso" resultClass="int">
+		SELECT /* selectCntReso */
+		       COUNT(*)
+		       AS CNT
+		  FROM RESO_INFO
+	      WHERE 1=1
+		 <isNotEmpty property="sch_word">
+		 	<isNotEmpty property="sch_fld" prepend="AND">
+		 		$sch_fld$ LIKE '%$sch_word$%'
+		 	</isNotEmpty>
+		 </isNotEmpty>
+	</select>
+ 
+ 	<!-- 자원 목록 조회  -->
+	<select id="selectListReso" resultClass="voReso">
+		SELECT /* selectListReso */
+		       *
+		  FROM (
+		        SELECT C.RESO_ID
+		              ,C.RESO_NM
+		              ,C.RESO_PTN
+		              ,C.RESO_TP
+		              ,C.RESO_ORD
+		              ,C.AUTH_CNT
+		              ,@ROWNUM := @ROWNUM + 1 
+                       AS ROWNO
+		          FROM (
+						SELECT A.RESO_ID
+						      ,A.RESO_NM
+						      ,A.RESO_PTN
+						      ,A.RESO_TP
+						      ,A.RESO_ORD
+						      ,(SELECT COUNT(*) 
+						          FROM RESO_AUTH 
+						         WHERE RESO_ID =A.RESO_ID)
+						       AS AUTH_CNT
+						  FROM RESO_INFO A
+		                 WHERE 1=1
+					 <isNotEmpty property="sch_word">
+					 	<isNotEmpty property="sch_fld" prepend="AND">
+					 		A.$sch_fld$ LIKE '%$sch_word$%'
+					 	</isNotEmpty>
+					 </isNotEmpty>	
+						 ORDER BY A.RESO_ORD
+		               ) C
+		              ,(SELECT @ROWNUM := 0) AS ROWTAB
+		       ) Z
+		 WHERE ROWNO BETWEEN #startRow# AND #endRow#
+	</select>
+	
+    <!-- 자원 정보 상세 -->
+    <select id="selectResoByResoId" resultClass="voReso">
+		SELECT /* selectResoByResoId */
+		       A.RESO_ID
+		      ,A.RESO_NM
+		      ,A.RESO_PTN
+		      ,A.RESO_TP
+		      ,A.RESO_ORD
+		      ,(SELECT COUNT(*) 
+		          FROM RESO_AUTH 
+		         WHERE RESO_ID =A.RESO_ID)
+		       AS AUTH_CNT
+		  FROM RESO_INFO A
+         WHERE A.RESO_ID = #resoId#
+    </select>
+
+    <!-- 자원 권한 목록 -->
+    <select id="selectResoAuthByResoId" resultClass="voReso">
+		SELECT /* selectResoAuthByResoId */
+		       A.AUTH_ID
+		      ,CASE A.AUTH_ID WHEN 'ANONYMOUS' THEN '모든사용자'
+		                      WHEN 'AUTHENTICATED' THEN '로그인사용자'
+		                      ELSE B.AUTH_NM
+		        END
+		       AS AUTH_NM
+		  FROM RESO_AUTH A
+		  LEFT OUTER JOIN AUTH B
+		               ON A.AUTH_ID = B.AUTH_ID
+		 WHERE A.RESO_ID = #resoId#
+		 ORDER BY CASE A.AUTH_ID WHEN 'ANONYMOUS' THEN 100
+		                         WHEN 'AUTHENTICATED' THEN 99
+		                         ELSE B.AUTH_NO
+		           END
+    </select>
+    
+    <!-- 모든 권한 목록 -->
+    <select id="selectListAllResoAuth" resultClass="voReso">
+		SELECT /* selectListAllResoAuth */
+		       A.AUTH_ID
+		      ,CASE A.AUTH_ID WHEN 'ANONYMOUS' THEN '모든사용자'
+		                      WHEN 'AUTHENTICATED' THEN '로그인사용자'
+		                      ELSE B.AUTH_NM
+		        END
+		       AS AUTH_NM
+		  FROM (
+		        SELECT PARENT_AUTH_ID AS AUTH_ID
+		          FROM AUTH_LVL
+		         UNION ALL
+		        SELECT CHILD_AUTH_ID AS AUTH_ID
+		          FROM AUTH_LVL
+		       ) A
+		  LEFT OUTER JOIN AUTH B
+		               ON A.AUTH_ID = B.AUTH_ID
+		 GROUP BY A.AUTH_ID
+		 ORDER BY CASE A.AUTH_ID WHEN 'ANONYMOUS' THEN 100
+		                         WHEN 'AUTHENTICATED' THEN 99
+		                         ELSE B.AUTH_NO
+		           END
+    </select>
+    
+    <!-- 자원 정보 카운트  -->
+	<select id="selectCntResoInfoByResoPtn" resultClass="int">
+		SELECT /* selectCntResoInfoByResoPtn */
+		       COUNT(*)
+		       AS CNT
+		  FROM RESO_INFO
+	     WHERE RESO_PTN = #resoPtn#
+	 	<isNotEmpty property="resoId" prepend="AND">
+	 		RESO_ID != #resoId#
+	 	</isNotEmpty>
+	</select>
+	
+    <!-- 자원 정보 인서트  -->
+    <insert id="insertResoInfo">
+    	<selectKey keyProperty="resoId" resultClass="java.lang.String">
+			SELECT CONCAT('RES_', LPAD(CAST(SUBSTRING(IFNULL(MAX(RESO_ID),0),5) AS SIGNED)+1, 6, '0'))
+			       AS RESO_ID
+			  FROM RESO_INFO
+		</selectKey>
+		INSERT INTO RESO_INFO /* insertResoInfo */
+		      (RESO_ID
+		      ,RESO_NM
+		      ,RESO_PTN
+		      ,RESO_TP
+		      ,RESO_ORD)
+		VALUES
+		      (#resoId#
+		      ,#resoNm#
+		      ,#resoPtn#
+		      ,'url'
+		      ,#resoOrd#
+		      )
+    </insert>
+    
+    <!-- 자원 권한 정보 인서트  -->
+    <insert id="insertResoAuth">
+		INSERT INTO RESO_AUTH /* insertResoAuth */
+		      (RESO_ID
+		      ,AUTH_ID
+		      ,AUTH_NM)
+		VALUES
+		      (#resoId#
+		      ,#authId#
+		      ,#authNm#
+		      )
+    </insert>
+    
+    <!-- 자원 정보 카운트  -->
+	<select id="selectCntResoInfoByResoId" resultClass="int">
+		SELECT /* selectCntResoInfoByResoId */
+		       COUNT(*)
+		       AS CNT
+		  FROM RESO_INFO
+	     WHERE RESO_ID = #resoId#
+	</select>    
+
+    <!-- 자원 정보 업데이트  -->
+	<update id="updateResoInfoByResoId">
+		UPDATE RESO_INFO /* updateResoInfoByResoId */
+		   SET RESO_NM = #resoNm#
+              ,RESO_PTN = #resoPtn#
+              ,RESO_ORD = #resoOrd#
+		 WHERE RESO_ID = #resoId#
+	</update>
+ 
+	<!-- 자원 권한 정보 삭제  -->
+    <delete id="deleteResoAuthByResoId">
+		DELETE /* deleteResoAuthByResoId */
+		  FROM RESO_AUTH
+		 WHERE RESO_ID = #resoId#
+    </delete> 
+    
+	<!-- 자원 정보 삭제  -->
+    <delete id="deleteResoInfoByResoId">
+		DELETE /* deleteResoInfoByResoId */
+		  FROM RESO_INFO
+		 WHERE RESO_ID = #resoId#
+    </delete> 
+</sqlMap>
+
+
