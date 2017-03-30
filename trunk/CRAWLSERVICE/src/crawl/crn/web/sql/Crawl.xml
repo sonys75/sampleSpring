@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="Crawl">
+    <typeAlias alias="voCrawler" type="crawl.vo.VoCrawler"/>
+
+    <!-- 수집 상태 조회  -->
+	<select id="selectCrawlStatus" resultClass="voCrawler">
+		SELECT /* selectCrawlStatus */
+		       CRAWLING_YN
+		  FROM CRAWL_STATUS
+		 LIMIT 1
+	</select>      
+	
+    <!-- 수집 상태 업데이트  -->
+	<update id="updateCrawlStatus">
+		UPDATE CRAWL_STATUS /* updateCrawlStatus */
+		   SET CRAWLING_YN = #crawlingYn#
+	</update>
+    
+    <!-- 수집게시판분류 조회  -->
+	<select id="selectListCrawlPartByCrawlYn" resultClass="voCrawler">
+		SELECT /* selectListCrawlPartByCrawlYn */
+		       PART
+		      ,TITLE
+		      ,CRAWL_URL
+		      ,CRAWL_PART
+		      ,CRAWL_YN
+		      ,USE_YN
+		  FROM CRAWL_BOARD_PART
+		 WHERE CRAWL_YN = #crawlYn#
+		 ORDER BY PART
+	</select>    
+	
+    <!-- 수집게시판템프테이블 링크 존재 카운트 조회  -->
+	<select id="selectCntCrawlTmpByLink" resultClass="int">
+	     SELECT /* selectCntCrawlTmpByLink */
+	            COUNT(*) 
+	            AS CNT
+	       FROM CRAWL_BOARD_TMP
+	      WHERE LINK = #link#
+	</select>
+    
+	
+    <!-- 수집게시판템프테이블 인서트 -->
+    <insert id="insertCrawlTmp">
+	   	<selectKey keyProperty="seq" resultClass="java.lang.String">
+			SELECT IFNULL(MAX(SEQ),0)+1
+			  FROM CRAWL_BOARD_TMP
+			 WHERE PART = #part#
+		</selectKey> 
+			INSERT INTO CRAWL_BOARD_TMP /* insertCrawlTmp */
+			      (PART
+			      ,SEQ
+			      ,SUBJECT
+			      ,LINK 
+			      ,PUBDATE
+			      ,CONT_YN
+			      ,IMG_YN
+			      ,COMMIT_YN
+			      ,REG_DT)
+			VALUES
+			      (#part#
+			      ,#seq#
+			      ,#subject#
+			      ,#link#
+			      ,#pubDate#
+			      ,'N'
+			      ,'N'
+			      ,'N'
+			      ,NOW()
+			      )
+    </insert>	
+	
+    <!-- 수집 상태 업데이트  -->
+	<update id="updateCrawlTmp">
+		UPDATE CRAWL_BOARD_TMP /* updateCrawlTmp */
+		   SET CONTENT = #content#
+		      ,READ_CNT = #readCnt#
+		      ,PUBDATE = #pubDate#
+		      ,CONT_YN = #contYn#
+		 WHERE PART = #part#
+		   AND SEQ = #seq#
+	</update>
+
+
+    <!-- 소설 목록 조회  -->
+	<select id="selectListCrawl" resultClass="voCrawler">
+		SELECT /* selectListCrawl */
+		       *
+		  FROM (
+		        SELECT A.PART
+		              ,A.SEQ
+		              ,A.LINK
+		              ,A.SUBJECT
+		              ,A.PUBDATE
+		              ,@ROWNUM := @ROWNUM + 1 
+		               AS ROWNO
+		          FROM (
+		                SELECT PART
+		                      ,SEQ
+		                      ,LINK
+		                      ,SUBJECT
+		                      ,PUBDATE
+		                 FROM CRAWL_BOARD_TMP
+		                WHERE PART = #part#
+		                  AND CONT_YN = 'N'
+		                ORDER BY SEQ
+		               ) A
+		              ,(SELECT @ROWNUM := 0) AS ROWTAB
+		       ) Z
+		 WHERE ROWNO BETWEEN #startRow# AND #endRow#
+	</select>
+
+    <!-- 수집 이미지 테스트 조회  -->
+	<select id="selectListCrawlImg" resultClass="voCrawler">
+	    <![CDATA[
+		SELECT /* selectListCrawlImg */
+		       *
+		  FROM (
+		        SELECT A.PART
+		              ,A.SEQ
+		              ,A.LINK
+		              ,A.SUBJECT
+		              ,A.CONTENT
+		              ,@ROWNUM := @ROWNUM + 1 
+		               AS ROWNO
+		          FROM (
+		                SELECT PART
+		                      ,SEQ
+		                      ,LINK
+		                      ,SUBJECT
+		                      ,CONTENT
+		                 FROM CRAWL_BOARD_TMP
+		                WHERE PART = #part#
+		                  AND CONT_YN = 'Y'
+						   AND IMG_YN = 'F'
+						   AND COMMIT_YN = 'N'
+		                ORDER BY SEQ
+		               ) A
+		              ,(SELECT @ROWNUM := 0) AS ROWTAB
+		       ) Z
+		 WHERE ROWNO BETWEEN #startRow# AND #endRow#
+
+		]]>
+	</select>  
+
+    <!-- 수집 이미지 상태 업데이트  -->
+	<update id="updateCrawlTmpByImgFind">
+		<![CDATA[
+
+		UPDATE CRAWL_BOARD_TMP /* updateCrawlTmpByImgFind */
+		   SET IMG_YN = 'F'
+		 WHERE CONT_YN = 'Y'
+		   AND IMG_YN = 'N'
+		   AND CONTENT LIKE '%<img%'
+
+		]]>
+	</update>
+	
+    <!-- 수집 이미지 상태 업데이트  -->
+	<update id="updateCrawlTmpByImgNotFind">
+		<![CDATA[
+
+		UPDATE CRAWL_BOARD_TMP /* updateCrawlTmpByImgNotFind */
+		   SET IMG_YN = 'Y'
+		 WHERE CONT_YN = 'Y'
+		   AND IMG_YN = 'N'
+		   AND CONTENT IS NOT NULL
+
+		]]>
+	</update>
+	
+    <!-- 수집 컨텐츠 주석 삭제 업데이트  -->
+	<update id="updateCrawlTmpByBlockFind">
+		<![CDATA[
+
+		UPDATE CRAWL_BOARD_TMP /* updateCrawlTmpByBlockFind */
+		   SET CONTENT=replace(replace(CONTENT,'<!--',''),'-->','')
+		 WHERE CONT_YN = 'Y'
+		   AND CONTENT LIKE '%<!--%'
+
+		]]>
+	</update>
+
+    <!-- 수집 이미지 상태 업데이트  -->
+	<update id="updateCrawlTmpImg">
+		UPDATE CRAWL_BOARD_TMP /* updateCrawlTmpImg */
+		   SET CONTENT = #content#
+		      ,IMG_YN = #imgYn#
+		 WHERE PART = #part#
+		   AND SEQ = #seq#
+	</update>
+	
+	
+
+    <!-- 수집게시판템프테이블 인서트 -->
+    <insert id="insertCrawlCont">
+		   INSERT INTO NOVEL_CONT /* insertCrawlCont */
+		          SELECT PART
+		                ,@ROWNUM := @ROWNUM + 1 AS SEQ
+		                ,'썰게시판' AS TITLE
+		                ,A.SUBJECT
+		                ,A.LINK
+		                ,A.CONTENT
+		                ,A.PUBDATE
+		            FROM (
+		                  SELECT PART
+		                        ,SEQ
+		                        ,LINK
+		                        ,SUBJECT
+		                        ,CONTENT
+		                        ,PUBDATE
+		                   FROM CRAWL_BOARD_TMP
+		                  WHERE PART = #part#
+		                    AND CONT_YN = 'Y'
+		                    AND IMG_YN = 'Y'
+		                    AND COMMIT_YN = 'N'
+		                  ORDER BY SEQ 
+		                 ) A
+		                ,(SELECT @ROWNUM := (SELECT IFNULL(MAX(SEQ),0)
+		                                           FROM NOVEL_CONT
+		                                          WHERE PART = #part#
+		                                    )
+		                 ) AS ROWTAB
+    </insert>
+
+    <!-- 수집 커밋 상태 업데이트  -->
+	<update id="updateCrawlCont">
+        UPDATE CRAWL_BOARD_TMP /* updateCrawlCont */
+           SET COMMIT_YN='Y'
+         WHERE PART = #part#
+           AND CONT_YN = 'Y'
+           AND IMG_YN = 'Y'
+           AND COMMIT_YN = 'N'
+	</update>
+        
+</sqlMap>
+
+

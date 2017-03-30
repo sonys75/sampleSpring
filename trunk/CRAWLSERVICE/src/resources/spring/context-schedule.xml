@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd">
+
+	<!-- 뉴스 RSS -->
+	<bean id="newsRss" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="rssNewsCollecting" />
+		<property name="targetMethod" value="collectNews" />
+		<property name="concurrent" value="false" />
+	</bean>
+
+	<bean id="newsRssTrigger" class="org.springframework.scheduling.quartz.CronTriggerBean">
+		<property name="jobDetail" ref="newsRss" />
+		<property name="cronExpression" value="0 9,19,29,39,49,59 5-23 * * ?" />
+	</bean>
+
+	<!-- 목록 수집 -->
+	<bean id="crawlerList" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="crawlList" />
+		<property name="targetMethod" value="crawlingStart" />
+		<property name="concurrent" value="false" />
+	</bean>
+
+	<!-- 목록 수집 트리거-->
+	<bean id="crawlerListTrigger" class="org.springframework.scheduling.quartz.CronTriggerBean">
+		<property name="jobDetail" ref="crawlerList" />
+		<property name="cronExpression" value="0 0,10,20,30,40,50 * * * ?" />
+	</bean>
+	
+	<!-- 내용 수집 -->
+	<bean id="crawlerCont" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="crawlCont" />
+		<property name="targetMethod" value="crawlingStart" />
+		<property name="concurrent" value="false" />
+	</bean>
+
+	<!-- 내용 수집 트리거-->
+	<bean id="crawlerContTrigger" class="org.springframework.scheduling.quartz.CronTriggerBean">
+		<property name="jobDetail" ref="crawlerCont" />
+		<property name="cronExpression" value="0 3,13,23,33,43,53 * * * ?" />
+	</bean>
+	
+	<!-- 이미지 수집 -->
+	<bean id="crawlerImg" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="crawlImg" />
+		<property name="targetMethod" value="crawlingStart" />
+		<property name="concurrent" value="false" />
+	</bean>
+
+	<!-- 이미지 수집 트리거-->
+	<bean id="crawlerImgTrigger" class="org.springframework.scheduling.quartz.CronTriggerBean">
+		<property name="jobDetail" ref="crawlerImg" />
+		<property name="cronExpression" value="0 6,16,26,36,46,56 * * * ?" />
+	</bean>
+	
+	<!-- 트리거 샘플 -->
+	<!-- 6, 18시에 실행한다. -->
+	<!-- <property name="cronExpression" value="0 0 6,18 * * ?" /> -->
+	<!-- <property name="cronExpression" value="0 */10 * * * ?" /> -->
+	<!-- <property name="cronExpression" value="0 0 */3 * * ?" /> -->
+	<!-- 5시 부터 24시까지 매 30분마다 실행한다. -->
+	<!-- <property name="cronExpression" value="0 */30 5-23 * * ?" /> -->
+	<!-- 새벽 3시에 실행한다. -->
+	<!-- <property name="cronExpression" value="0 0 3 * * ?" /> -->
+	
+	<!-- 수집 스케줄러 -->
+	<bean id="crawlerScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean" destroy-method="destroy">
+		<property name="triggers">
+			<list>
+			    
+			    <ref bean="newsRssTrigger" />
+			    <!-- 
+				<ref bean="crawlerListTrigger" />
+				<ref bean="crawlerContTrigger" /> 
+				<ref bean="crawlerImgTrigger" />
+				 --> 
+			</list>
+		</property>
+	</bean>
+</beans>

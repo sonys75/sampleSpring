@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE tiles-definitions PUBLIC
+       "-//Apache Software Foundation//DTD Tiles Configuration 2.0//EN"
+       "http://tiles.apache.org/dtds/tiles-config_2_0.dtd">
+<tiles-definitions>
+ 
+ 
+	<definition name="sys" template="/WEB-INF/jsp/cmm/lay/mng/layout.jsp">
+    	<put-attribute name="title" value="시스템관리"/>
+        <put-attribute name="header" value="/cmm/lay/mng/header.do" />      
+        <put-attribute name="leftmenu" value="/cmm/lay/mng/leftMenu.do" />
+        <put-attribute name="copyrights" value="/cmm/lay/mng/copyrights.do" />
+    </definition>
+     
+    <definition name="sys/*" extends="sys">
+        <put-attribute name="content" value="/WEB-INF/jsp/sys/{1}.jsp" />
+    </definition>
+    <definition name="sys/*/*" extends="sys">
+        <put-attribute name="content" value="/WEB-INF/jsp/sys/{1}/{2}.jsp" />
+    </definition>
+    <definition name="sys/*/*/*" extends="sys">
+        <put-attribute name="content" value="/WEB-INF/jsp/sys/{1}/{2}/{3}.jsp" />
+    </definition>
+    <definition name="sys/*/*/*/*" extends="sys">
+        <put-attribute name="content" value="/WEB-INF/jsp/sys/{1}/{2}/{3}/{4}.jsp" />
+    </definition>
+    <definition name="sys/*/*/*/*/*" extends="sys">
+        <put-attribute name="content" value="/WEB-INF/jsp/sys/{1}/{2}/{3}/{4}/{5}.jsp" />
+    </definition>
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ <!-- 
+ 
+ 
+ 
+    <definition name="popup" template="/WEB-INF/jsp/lay/popup.jsp">
+    	<put-attribute name="title" value="한국석유관리원"/>
+    </definition>
+    <definition name="*PopUp" extends="popup">
+        <put-attribute name="content" value="/WEB-INF/jsp/{1}PopUp.jsp" />
+    </definition>
+    <definition name="*/*PopUp" extends="popup">
+        <put-attribute name="content" value="/WEB-INF/jsp/{1}/{2}PopUp.jsp" />
+    </definition>
+    <definition name="*/*/*PopUp" extends="popup">
+        <put-attribute name="content" value="/WEB-INF/jsp/{1}/{2}/{3}PopUp.jsp" />
+    </definition>
+    <definition name="*/*/*/*PopUp" extends="popup">
+        <put-attribute name="content" value="/WEB-INF/jsp/{1}/{2}/{3}/{4}PopUp.jsp" />
+    </definition>  
+    <definition name="*/*/*/*/*PopUp" extends="popup">
+        <put-attribute name="content" value="/WEB-INF/jsp/{1}/{2}/{3}/{4}/{5}PopUp.jsp" />
+    </definition>
+    
+    에러처리 시작
+    <definition name="error/*" template="/error/error.jsp"/>
+	<definition name="com/cmm/error/dataAccessFailure" template="/WEB-INF/jsp/com/cmm/error/dataAccessFailure.jsp"/>
+	<definition name="com/cmm/error/egovBizException" template="/WEB-INF/jsp/com/cmm/error/egovBizException.jsp"/>
+	<definition name="com/cmm/error/egovError" template="/WEB-INF/jsp/com/cmm/error/egovError.jsp"/>
+	<definition name="com/cmm/error/egovHttpSessionException" template="/WEB-INF/jsp/com/cmm/error/egovHttpSessionException.jsp"/>
+    
+    에러처리 종료
+    
+    <definition name="com/utl/wed/*" template="/WEB-INF/jsp/com/utl/wed/{1}.jsp">
+    </definition>
+    
+    
+     -->
+
+</tiles-definitions>

@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="MenuAuth">
+    <typeAlias alias="voMenu" type="crawl.vo.VoMenu"/>
+    <typeAlias alias="voAuth" type="crawl.vo.VoAuth"/>
+ 
+    <!-- 메뉴-권한 정보 목록 -->
+    <select id="selectListMenuInfoByAuthId" resultClass="voMenu">
+		SELECT /* selectListMenuInfoByAuthId */
+		       D.MENU_NM
+		      ,D.MENU_URL
+		      ,D.UP_MENU_ID
+		      ,FUNC.MENU_ID
+		      ,FUNC.LEVEL
+		      ,E.AUTH_ID
+		 FROM (
+		       SELECT MENU_CONNECT_BY_PARENT() AS MENU_ID
+		             ,@LEVEL AS LEVEL
+		         FROM (
+		               SELECT @START_WITH := 0
+		                     ,@ID := @START_WITH
+		                     ,@LEVEL := 0
+		              ) VARS
+		             ,MENU_INFO
+		        WHERE @ID IS NOT NULL
+		      ) FUNC
+		 JOIN MENU_INFO D
+		   ON FUNC.MENU_ID = D.MENU_ID
+		INNER JOIN MENU_AUTH E
+		        ON D.MENU_ID = E.MENU_ID
+		       AND E.AUTH_ID = #authId#
+    </select>
+
+    <!-- 메뉴-권한 정보 목록 -->
+    <select id="selectAllListMenuInfo" resultClass="voMenu">
+		SELECT /* selectAllListMenuInfo */
+		       D.MENU_NM
+		      ,D.MENU_URL
+		      ,D.UP_MENU_ID
+		      ,FUNC.MENU_ID
+		      ,FUNC.LEVEL
+		 FROM (
+		       SELECT MENU_CONNECT_BY_PARENT() AS MENU_ID
+		             ,@LEVEL AS LEVEL
+		         FROM (
+		               SELECT @START_WITH := 0
+		                     ,@ID := @START_WITH
+		                     ,@LEVEL := 0
+		              ) VARS
+		             ,MENU_INFO
+		        WHERE @ID IS NOT NULL
+		      ) FUNC
+		 JOIN MENU_INFO D
+		   ON FUNC.MENU_ID = D.MENU_ID
+    </select>
+    
+    <!-- 권한 정보 상세  -->
+    <select id="selectAuthByAuthId" resultClass="voAuth">
+		SELECT /* selectAuthByAuthId */
+		       A.AUTH_NO
+		      ,A.UP_AUTH_NO
+		      ,B.AUTH_ID AS UP_AUTH_ID
+		      ,B.AUTH_NM AS UP_AUTH_NM
+		      ,A.AUTH_ID
+		      ,A.AUTH_NM
+		  FROM AUTH A
+		  LEFT OUTER JOIN AUTH B
+		               ON A.UP_AUTH_NO = B.AUTH_NO
+         WHERE 1=1
+	       AND A.AUTH_ID = #authId#
+    </select>
+    
+    <!-- 메뉴-권한 정보 목록 -->
+    <select id="selectListMenuAuth" resultClass="voMenu">
+		SELECT /* selectListMenuAuth */
+		       MENU_ID
+		      ,AUTH_ID
+		  FROM MENU_AUTH
+		 WHERE AUTH_ID = #authId#
+    </select>
+	
+	<!-- 메뉴-권한 정보 삭제  -->
+    <delete id="deleteMenuAuthByAuthId">
+		DELETE /* deleteMenuAuthByAuthId */
+		  FROM MENU_AUTH
+		 WHERE AUTH_ID = #authId#
+    </delete> 
+    
+    <!-- 메뉴-권한 정보 인서트  -->
+    <insert id="insertMenuAuth">
+		INSERT INTO MENU_AUTH /* insertMenuAuth */
+		      (MENU_ID
+		      ,AUTH_ID)
+		VALUES
+		      (#menuId#
+		      ,#authId#
+		      )
+    </insert>
+
+</sqlMap>
+
+

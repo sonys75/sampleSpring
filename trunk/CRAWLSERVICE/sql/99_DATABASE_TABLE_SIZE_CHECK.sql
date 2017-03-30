@@ -1,0 +1,101 @@
+#테이블별 사이즈 확인
+SELECT /*테이블별 사이즈*/
+       TABLE_NAME
+      ,TABLE_COMMENT
+      ,TABLE_ROWS
+      ,ROUND(DATA_LENGTH/(1024*1024),2) AS 'DATA_SIZE(MB)'
+      ,ROUND(INDEX_LENGTH/(1024*1024),2) AS 'INDEX_SIZE(MB)'
+  FROM INFORMATION_SCHEMA.TABLES
+ WHERE TABLE_SCHEMA = 'did_manage'
+ GROUP BY TABLE_NAME 
+ ORDER BY DATA_LENGTH DESC;
+
+#DATABASE별 사이즈 확인
+SELECT /*DATABASE별 사이즈*/
+	     TABLE_SCHEMA
+      ,COUNT(*) NUM_OF_TABLE
+      ,CONCAT(ROUND(SUM(TABLE_ROWS)/1000000,2),'M') AS ROWS
+	    ,CONCAT(ROUND(SUM(DATA_LENGTH)/(1024*1024*1024),2),'G') AS DATA
+	    ,CONCAT(ROUND(SUM(INDEX_LENGTH)/(1024*1024*1024),2),'G') AS IDX
+	    ,CONCAT(ROUND(SUM(DATA_LENGTH+INDEX_LENGTH)/(1024*1024*1024),2),'G') AS TOTAL_SIZE
+	    ,ROUND(SUM(INDEX_LENGTH)/SUM(DATA_LENGTH),2) AS IDXFRAC
+  FROM INFORMATION_SCHEMA.TABLES
+ GROUP BY TABLE_SCHEMA
+ ORDER BY SUM(DATA_LENGTH+INDEX_LENGTH) DESC 
+ LIMIT 10;
+ 
+SELECT SUM(A.TOT_CNT) AS TOT_CNT
+      ,SUM(A.CNT1) AS CNT1
+      ,SUM(A.CNT2) AS CNT2
+      ,SUM(A.CNT3) AS CNT3
+      ,SUM(A.CNT4) AS CNT4
+      ,SUM(A.CNT5) AS CNT5
+  FROM (
+        SELECT COUNT(*) AS TOT_CNT
+              ,0 AS CNT1
+              ,0 AS CNT2
+              ,0 AS CNT3
+              ,0 AS CNT4
+              ,0 AS CNT5
+          FROM STP_INFO
+         UNION ALL
+        SELECT 0 AS TOT_CNT
+              ,COUNT(*) AS CNT1
+              ,0 AS CNT2
+              ,0 AS CNT3
+              ,0 AS CNT4
+              ,0 AS CNT5
+          FROM STP_INFO
+         WHERE TIMESTAMPDIFF(MINUTE,IFNULL(LAST_CONN_DT,0),NOW()) BETWEEN 0 AND 59
+         UNION ALL
+        SELECT 0 AS TOT_CNT
+              ,0 AS CNT1
+              ,COUNT(*) AS CNT2
+              ,0 AS CNT3
+              ,0 AS CNT4
+              ,0 AS CNT5
+          FROM STP_INFO
+         WHERE TIMESTAMPDIFF(MINUTE,IFNULL(LAST_CONN_DT,0),NOW()) BETWEEN 60 AND 719
+         UNION ALL
+        SELECT 0 AS TOT_CNT
+              ,0 AS CNT1
+              ,0 AS CNT2
+              ,COUNT(*) AS CNT3
+              ,0 AS CNT4
+              ,0 AS CNT5
+          FROM STP_INFO
+         WHERE TIMESTAMPDIFF(MINUTE,IFNULL(LAST_CONN_DT,0),NOW()) BETWEEN 720 AND 1439
+         UNION ALL
+        SELECT 0 AS TOT_CNT
+              ,0 AS CNT1
+              ,0 AS CNT2
+              ,0 AS CNT3
+              ,COUNT(*) AS CNT4
+              ,0 AS CNT5
+          FROM STP_INFO
+         WHERE TIMESTAMPDIFF(MINUTE,IFNULL(LAST_CONN_DT,0),NOW()) BETWEEN 1440 AND 10079
+         UNION ALL
+        SELECT 0 AS TOT_CNT
+              ,0 AS CNT1
+              ,0 AS CNT2
+              ,0 AS CNT3
+              ,0 AS CNT4
+              ,COUNT(*) AS CNT5
+          FROM STP_INFO
+         WHERE TIMESTAMPDIFF(MINUTE,IFNULL(LAST_CONN_DT,0),NOW()) >= 10080
+       ) A
+;
+
+SELECT B.STP_TITLE
+      ,A.*
+  FROM API_LOG A
+  LEFT OUTER JOIN STP_INFO B
+               ON A.API_STP_ID = B.STP_ID   
+ ORDER BY A.API_DATE DESC, A.API_SEQ DESC
+;
+
+#30일전의 로그 삭제
+PURGE MASTER LOGS BEFORE DATE_SUB(CURRENT_DATE, INTERVAL 30 DAY)
+;
+#테이블 사이즈 줄이기
+OPTIMIZE TABLE API_LOG

@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="MenuManage">
+    <typeAlias alias="voReso" type="crawl.vo.VoReso"/>
+    <typeAlias alias="voMenu" type="crawl.vo.VoMenu"/>
+
+ 	<!-- 메뉴 목록 조회  -->
+	<select id="selectListMenu" resultClass="voMenu">
+		SELECT /* selectListMenu */
+		       D.MENU_NM
+		      ,D.MENU_URL
+		      ,D.UP_MENU_ID
+		      ,FUNC.MENU_ID
+		      ,FUNC.LEVEL
+		  FROM (
+		        SELECT MENU_CONNECT_BY_PARENT() AS MENU_ID
+		              ,@LEVEL AS LEVEL
+		          FROM (
+		                SELECT @START_WITH := 0
+		                      ,@ID := @START_WITH
+		                      ,@LEVEL := 0
+		               ) VARS
+		              ,MENU_INFO
+		         WHERE @ID IS NOT NULL
+		       ) FUNC
+		  JOIN MENU_INFO D
+		    ON FUNC.MENU_ID = D.MENU_ID
+	</select>
+	
+    <!-- 메뉴 정보 상세 -->
+    <select id="selectMenuInfoByMenuId" resultClass="voMenu">
+		SELECT /* selectMenuInfoByMenuId */
+		       A.MENU_ID
+		      ,A.MENU_NM
+		      ,A.MENU_URL
+		      ,A.UP_MENU_ID
+		      ,B.MENU_NM 
+		       AS UP_MENU_NM
+		      ,DATE_FORMAT(A.MOD_DT, '%Y-%m-%d') AS MOD_DT
+  			  ,A.MOD_ID
+  			  ,A.MOD_IP
+  			  ,DATE_FORMAT(A.REG_DT, '%Y-%m-%d') AS REG_DT
+		      ,A.REG_ID
+		      ,A.REG_IP
+		  FROM MENU_INFO A
+		  LEFT OUTER JOIN MENU_INFO B
+		               ON B.MENU_ID = A.UP_MENU_ID
+         WHERE A.MENU_ID = #menuId#
+    </select>
+    
+    <!-- 상위 메뉴 정보 카운트  -->
+	<select id="selectCntLowerMenuInfoByMenuId" resultClass="int">
+		SELECT /* selectCntLowerMenuInfoByMenuId */
+		       COUNT(*)
+		       AS CNT
+		  FROM MENU_INFO
+	     WHERE UP_MENU_ID = #menuId#
+	</select>
+
+    <!-- 메뉴 정보 인서트  -->
+    <insert id="insertMenuInfo">
+    	<selectKey keyProperty="menuId" resultClass="java.lang.String">
+			SELECT IFNULL(MAX(MENU_ID),0)+1
+			       AS MENU_ID
+			  FROM MENU_INFO
+		</selectKey>
+		INSERT INTO MENU_INFO /* insertMenuInfo */
+		      (MENU_ID
+		      ,MENU_NM
+		      ,MENU_URL
+		      ,UP_MENU_ID
+		      ,MOD_DT
+		      ,MOD_ID
+		      ,MOD_IP
+		      ,REG_DT
+		      ,REG_ID
+		      ,REG_IP)
+		VALUES
+		      (#menuId#
+		      ,#menuNm#
+		      ,#menuUrl#
+		      ,#upMenuId#
+		      ,NOW()
+		      ,#userId#
+		      ,#userIp#
+		      ,NOW()
+		      ,#userId#
+		      ,#userIp#
+		      )
+    </insert>
+
+    <!-- 메뉴 정보 업데이트  -->
+	<update id="updateMenuInfoByMenuId">
+		UPDATE MENU_INFO /* updateMenuInfoByMenuId */
+		   SET MENU_NM = #menuNm#
+              ,MENU_URL = #menuUrl#
+              ,UP_MENU_ID = #upMenuId#
+              ,MOD_DT = NOW()
+              ,MOD_ID = #userId#
+              ,MOD_IP = #userIp#
+		 WHERE MENU_ID = #menuId#
+	</update>
+ 
+	<!-- 메뉴 권한 정보 삭제  -->
+    <delete id="deleteMenuAuthByMenuId">
+		DELETE /* deleteMenuAuthByMenuId */
+		  FROM MENU_AUTH
+		 WHERE MENU_ID = #menuId#
+    </delete> 
+    
+	<!-- 메뉴 정보 삭제  -->
+    <delete id="deleteMenuInfoByMenuId">
+		DELETE /* deleteMenuInfoByMenuId */
+		  FROM MENU_INFO
+		 WHERE MENU_ID = #menuId#
+    </delete> 
+</sqlMap>
+
+

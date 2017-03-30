@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="News">
+    <typeAlias alias="voNews" type="crawl.vo.VoNews"/>
+
+	<!-- 최신 뉴스 -->
+	<select id="selectListNewsRss" resultClass="voNews">
+		SELECT /* selectNewsRss */
+		       PROVIDE_CD
+		      ,NEWS_TIME
+		      ,SEQ
+		      ,SUBJECT
+		      ,LINK
+		      ,CATEGORY
+		      ,PUBDATE
+		  FROM NEWS_LST
+		 WHERE NEWS_TIME = (SELECT MAX(NEWS_TIME) 
+		                      FROM NEWS_LST)
+		 <isNotEmpty property="newsTime">
+		   AND NEWS_TIME > #newsTime#
+		 </isNotEmpty>                     
+		 ORDER BY SEQ
+	</select>
+	
+    <!-- 뉴스를 업데이트 한다. -->
+    <insert id="insertNewsRss">
+		INSERT INTO NEWS_LST /* insertNewsRss */
+		      (PROVIDE_CD
+			  ,NEWS_TIME
+			  ,SEQ
+			  ,SUBJECT
+			  ,LINK 
+			  ,CATEGORY
+			  ,PUBDATE)
+		VALUES
+		      (#provideCd#
+		      ,#newsTime#
+		      ,#seq#
+		      ,#subject#
+		      ,#link#
+		      ,#category#
+		      ,#pubDate#
+		      )
+    </insert>
+    
+    <!-- 뉴스를 삭제한다. -->
+    <delete id="deleteNewsRss">
+		DELETE /* deleteNewsRss */
+		  FROM NEWS_LST
+		 WHERE NEWS_TIME &lt; DATE_FORMAT(DATE_ADD(NOW(), INTERVAL - 3 DAY),'%Y%m%d%H%i%s')
+    </delete>
+
+</sqlMap>
+
+

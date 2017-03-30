@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:util="http://www.springframework.org/schema/util"
+    xmlns:p="http://www.springframework.org/schema/p"
+    xmlns:security="http://www.springframework.org/schema/security"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+                        http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+                        http://www.springframework.org/schema/security
+                        http://www.springframework.org/schema/security/spring-security-3.1.xsd
+                        http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+	<!-- 	
+	Custom Expression Handler
+    <bean id="expressionHandler" class="kr.co.evansoft.cmm.security.expression.CustomSecurityExpressionHandler" />
+ 
+	<security:http pattern="\A/WEB-INF/jsp/.*\Z" request-matcher="regex" security="none"></security:http> 
+	-->
+	<!-- 
+	Session 폭증 문제
+	Spring Security는 로그인시 예외를 비롯해 많은 정보를 세션(HttpSession)에 저장한다.
+	이 경우 로그인이 공격 대상이 될 때 로그인 URL에서 세션을 폭발적으로 생성하게 되고 이로인해 메모리 폭증이 발생한다. 이는 결과적으로 다시 매우 잦은 Full GC를 유발하게 된다.
+	따라서 공격에 노출될 가능성이 있는 사이트는 최소한 로그인의 경우에 세션을 생성하지 않도록 다양한 처리가 필요하다. 혹은 세션을 생성하더라도 공격시도는 Spring Security를 타기전에 다른 방법으로 차단할 수 있어야 한다.
+	로그인시에 세션에 저장하는 값들은 WebAttributes의 상수들 참조.
+	설정에서 세션 생성하지 않도록 설정에서 create-session="never"를 준다
+	-->
+	<security:http auto-config="true" use-expressions="true" create-session="never" access-denied-page="/usr/lgn/login.do?fail=true">
+		<security:intercept-url pattern="/*.ico" access="permitAll" />
+		<security:intercept-url pattern="/images/**" access="permitAll" />
+		<security:intercept-url pattern="/**/*.css" access="permitAll" />
+		<security:intercept-url pattern="/**/*.js" access="permitAll" />
+		<security:intercept-url pattern="/**/*.htm*" access="permitAll" />
+		<security:intercept-url pattern="/*.jsp" access="permitAll" /> 
+		<security:intercept-url pattern="/usr/lgn/*" access="permitAll" />
+
+		<security:intercept-url pattern="/mng/**" access="authenticated"/>
+		<security:intercept-url pattern="/cmm/lay/**" access="authenticated" />
+
+		<security:form-login 
+			login-page="/usr/lgn/login.do"
+			username-parameter="user_id" 
+        	password-parameter="user_pw"
+			default-target-url="/mng/man/index.do"
+			authentication-success-handler-ref="loginSuccessHandler"
+			authentication-failure-handler-ref="loginFailureHandler" 
+			/>
+		
+		<security:logout invalidate-session="true"
+			delete-cookies="JSESSIONID"
+			logout-url="/usr/lgn/logout.do" 
+			logout-success-url="/usr/lgn/login.do" />
+		<!-- <security:access-denied-handler error-page="/cmm/err/accessDeniedException" /> -->
+		<!-- <security:access-denied-handler ref="accessDeniedHandler" /> -->
+
+	</security:http>
+ 
+ 	<!-- loginSuccessHandler 에서 property 로 처리해도 되며 핸들러 내부의 생성함수에서 선언해도 된다. -->
+	<bean id="loginSuccessHandler" class="resources.com.security.handler.LoginSuccessHandler">
+		<property name="targetUrlParameter" value="returnUrl"/>
+		<property name="useReferer" value="false"/>
+		<property name="defaultUrl" value="/mng/man/index.do"/>
+	</bean>
+	<bean id="loginFailureHandler" class="resources.com.security.handler.LoginFailureHandler">
+	    <property name="loginidname" value="user_id" />
+	    <property name="loginpasswdname" value="user_pw" />
+	    <property name="loginredirectname" value="returnUrl" />
+	    <property name="exceptionmsgname" value="retMessage" />
+	    <property name="defaultFailureUrl" value="/usr/lgn/login.do" />
+	    <property name="failcnt" value="0" />
+	</bean>
+	<bean id="passwordEncoder" class="resources.com.security.encoder.PasswordEncoder"/>
+	
+	<security:authentication-manager>
+	    <security:authentication-provider user-service-ref="customJdbcDaoImpl">
+	    	<security:password-encoder ref="passwordEncoder">
+				<security:salt-source user-property="username"/>
+			</security:password-encoder>
+	    </security:authentication-provider>
+	</security:authentication-manager>
+	 
+	<bean id="customJdbcDaoImpl" class="resources.com.security.dao.impl.CustomJdbcDaoImpl">
+	    <property name="dataSource" ref="dataSource" />
+	    <property name="rolePrefix" value="" />
+	    <property name="usersByUsernameQuery" value="SELECT USER_ID, USER_PW, USER_NM FROM USER_INFO WHERE USER_ID=?" />
+	    <property name="authoritiesByUsernameQuery" value="SELECT AUTH_ID FROM USER_AUTH WHERE USER_ID=?" />
+	    <property name="enableGroups" value="false" />
+	</bean>
+<!-- 
+	<security:authentication-manager>
+		<security:authentication-provider>
+			<security:password-encoder ref="passwordEncoder">
+				<security:salt-source user-property="username"/>
+			</security:password-encoder>
+			<security:jdbc-user-service 
+				data-source-ref="dataSource"
+				users-by-username-query="SELECT USER_ID AS USER_ID
+		 									   ,USER_PW AS USER_PW
+		             						   ,USER_NM AS USER_NM 
+		             				      FROM USER_INFO 
+		             				     WHERE USER_ID=?"
+				authorities-by-username-query="SELECT USER_ID AS USER_ID
+				             						 ,USER_AUTH AS AUTHORITY 
+				             				     FROM USER_INFO 
+				             				    WHERE USER_ID=?
+				             				      AND USE_YN='Y'"/>
+		</security:authentication-provider>
+	</security:authentication-manager>
+	 -->
+	<bean id="accessDecisionManager" class="org.springframework.security.access.vote.AffirmativeBased">
+		<property name="allowIfAllAbstainDecisions" value="false" />
+		<property name="decisionVoters">
+			<list>
+				<bean class="org.springframework.security.access.vote.RoleVoter">
+					<property name="rolePrefix" value="" />
+				</bean>
+				<bean class="org.springframework.security.access.vote.AuthenticatedVoter" />
+			</list>
+		</property>
+	</bean>
+	
+	<!-- <bean id="antPathMatcher" class="org.springframework.util.AntPathMatcher"/> -->
+</beans>

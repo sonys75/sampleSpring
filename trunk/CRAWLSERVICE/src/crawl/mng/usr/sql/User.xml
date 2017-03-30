@@ -1,0 +1,295 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+"http://www.ibatis.com/dtd/sql-map-2.dtd">
+<sqlMap namespace="User">
+    <typeAlias alias="voUserInfo" type="crawl.vo.VoUserInfo"/>
+    
+    <!-- 사용자 정보 카운트  -->
+	<select id="selectCntUserInfo" resultClass="int">
+		SELECT /* selectCntUserInfo */
+		       COUNT(*)
+		       AS CNT
+		  FROM (
+				SELECT A.USER_ID
+				      ,A.CORP_ID
+				      ,C.CORP_NM
+				      ,B.AUTH_ID
+				      ,D.AUTH_NM
+				      ,A.USER_NM
+				      ,A.USER_EMAIL
+				      ,A.USER_HP
+				      ,A.USER_TEL
+				      ,A.USE_YN
+				      ,A.ACCESS_FAIL_CNT
+				      ,DATE_FORMAT(A.MOD_DT, '%Y-%m-%d') AS MOD_DT
+				      ,A.MOD_ID
+				      ,A.MOD_IP
+				      ,DATE_FORMAT(A.REG_DT, '%Y-%m-%d') AS REG_DT
+				      ,A.REG_ID
+				      ,A.REG_IP
+				  FROM USER_INFO A
+				 INNER JOIN USER_AUTH B
+				         ON A.USER_ID = B.USER_ID
+				 INNER JOIN CORP_INFO C
+				         ON A.CORP_ID = C.CORP_ID
+				 INNER JOIN AUTH D
+				         ON B.AUTH_ID = D.AUTH_ID
+				 WHERE A.CORP_ID IN (
+				          		       SELECT CORP_ID
+				          		         FROM CORP_INFO
+				          		        WHERE CORP_ID = #corpId#
+				          		        UNION ALL
+				          		       SELECT D.CORP_ID
+				          		         FROM (
+				          		               SELECT CORP_CONNECT_BY_PARENT() AS CORP_ID
+				          		                     ,@LEVEL AS LEVEL
+				          		                 FROM (
+				          		                       SELECT @START_WITH := #corpId#
+				          		                             ,@ID := @START_WITH
+				          		                             ,@LEVEL := 0
+				          		                      ) VARS
+				          		                     ,CORP_INFO
+				          		                WHERE @ID IS NOT NULL
+				          		              ) FUNC
+				          		         JOIN CORP_INFO D
+				          		           ON FUNC.CORP_ID = D.CORP_ID
+				                    )
+			 <isNotEmpty property="sch_word">
+			 	<isNotEmpty property="sch_fld" prepend="AND">
+			 		A.$sch_fld$ LIKE '%$sch_word$%'
+			 	</isNotEmpty>
+			 </isNotEmpty>	
+		       ) A
+
+	</select>
+ 
+ 	<!-- 사용자 목록조회  -->
+	<select id="selectListUserInfo" resultClass="voUserInfo">
+		SELECT /* selectListUserInfo */
+		       *
+		  FROM (
+		        SELECT A.USER_ID
+				      ,A.CORP_ID
+				      ,A.CORP_NM
+				      ,A.AUTH_ID
+				      ,A.AUTH_NM
+				      ,A.USER_NM
+				      ,A.USER_EMAIL
+				      ,A.USER_HP
+				      ,A.USER_TEL
+				      ,A.USE_YN
+				      ,A.ACCESS_FAIL_CNT
+				      ,A.MOD_DT
+				      ,A.MOD_ID
+				      ,A.MOD_IP
+				      ,A.REG_DT
+				      ,A.REG_ID
+				      ,A.REG_IP
+		              ,@ROWNUM := @ROWNUM + 1 
+		        	   AS ROWNO
+		          FROM (
+						SELECT A.USER_ID
+						      ,A.CORP_ID
+						      ,C.CORP_NM
+						      ,B.AUTH_ID
+						      ,D.AUTH_NM
+						      ,A.USER_NM
+						      ,A.USER_EMAIL
+						      ,A.USER_HP
+						      ,A.USER_TEL
+						      ,A.USE_YN
+						      ,A.ACCESS_FAIL_CNT
+						      ,DATE_FORMAT(A.MOD_DT, '%Y-%m-%d') AS MOD_DT
+						      ,A.MOD_ID
+						      ,A.MOD_IP
+						      ,DATE_FORMAT(A.REG_DT, '%Y-%m-%d') AS REG_DT
+						      ,A.REG_ID
+						      ,A.REG_IP
+						  FROM USER_INFO A
+						 INNER JOIN USER_AUTH B
+						         ON A.USER_ID = B.USER_ID
+						 INNER JOIN CORP_INFO C
+						         ON A.CORP_ID = C.CORP_ID
+						 INNER JOIN AUTH D
+						         ON B.AUTH_ID = D.AUTH_ID
+						 WHERE A.CORP_ID IN (
+						          		       SELECT CORP_ID
+						          		         FROM CORP_INFO
+						          		        WHERE CORP_ID = #corpId#
+						          		        UNION ALL
+						          		       SELECT D.CORP_ID
+						          		         FROM (
+						          		               SELECT CORP_CONNECT_BY_PARENT() AS CORP_ID
+						          		                     ,@LEVEL AS LEVEL
+						          		                 FROM (
+						          		                       SELECT @START_WITH := #corpId#
+						          		                             ,@ID := @START_WITH
+						          		                             ,@LEVEL := 0
+						          		                      ) VARS
+						          		                     ,CORP_INFO
+						          		                WHERE @ID IS NOT NULL
+						          		              ) FUNC
+						          		         JOIN CORP_INFO D
+						          		           ON FUNC.CORP_ID = D.CORP_ID
+						                    )
+					 <isNotEmpty property="sch_word">
+					 	<isNotEmpty property="sch_fld" prepend="AND">
+					 		A.$sch_fld$ LIKE '%$sch_word$%'
+					 	</isNotEmpty>
+					 </isNotEmpty>
+					     ORDER BY A.REG_DT DESC
+		               ) A
+		              ,(SELECT @ROWNUM := 0) AS ROWTAB
+		       ) Z
+		 WHERE ROWNO BETWEEN #startRow# AND #endRow#
+	</select>
+	
+    <!-- 사용자 정보 상세  -->
+    <select id="selectUserInfoByUserId" resultClass="voUserInfo">
+		SELECT /* selectUserInfoByUserId */ 
+		       A.USER_ID
+		      ,A.CORP_ID
+		      ,C.CORP_NM
+		      ,B.AUTH_ID
+		      ,D.AUTH_NM
+		      ,A.USER_NM
+		      ,A.USER_EMAIL
+		      ,A.USER_HP
+		      ,A.USER_TEL
+		      ,A.USE_YN
+		      ,A.ACCESS_FAIL_CNT
+		      ,A.MOD_DT
+		      ,A.MOD_ID
+		      ,A.MOD_IP
+		      ,A.REG_DT
+		      ,A.REG_ID
+		      ,A.REG_IP
+		  FROM USER_INFO A
+		 INNER JOIN USER_AUTH B
+		         ON A.USER_ID = B.USER_ID
+		 INNER JOIN CORP_INFO C
+		         ON A.CORP_ID = C.CORP_ID
+		 INNER JOIN AUTH D
+		         ON B.AUTH_ID = D.AUTH_ID
+		 WHERE A.CORP_ID IN (
+		          		       SELECT CORP_ID
+		          		         FROM CORP_INFO
+		          		        WHERE CORP_ID = #corpId#
+		          		        UNION ALL
+		          		       SELECT D.CORP_ID
+		          		         FROM (
+		          		               SELECT CORP_CONNECT_BY_PARENT() AS CORP_ID
+		          		                     ,@LEVEL AS LEVEL
+		          		                 FROM (
+		          		                       SELECT @START_WITH := #corpId#
+		          		                             ,@ID := @START_WITH
+		          		                             ,@LEVEL := 0
+		          		                      ) VARS
+		          		                     ,CORP_INFO
+		          		                WHERE @ID IS NOT NULL
+		          		              ) FUNC
+		          		         JOIN CORP_INFO D
+		          		           ON FUNC.CORP_ID = D.CORP_ID
+		                    )
+		   AND A.USER_ID = #userId#
+    </select>
+    
+    
+    <!-- 사용자 정보 인서트  -->
+    <insert id="insertUserInfo">
+		INSERT INTO USER_INFO /* insertUserInfo */
+		      (
+		       USER_ID
+		      ,CORP_ID
+		      ,USER_NM
+		      ,USER_PW
+		      ,USER_EMAIL
+		      ,USER_HP
+		      ,USER_TEL
+		      ,USER_AUTH
+		      ,USE_YN
+		      ,ACCESS_FAIL_CNT
+		      ,MOD_DT
+		      ,MOD_ID
+		      ,MOD_IP
+		      ,REG_DT
+		      ,REG_ID
+		      ,REG_IP
+		      )
+		VALUES
+		      (
+		       #userId#
+		      ,#corpId#
+		      ,#userNm#
+		      ,#userPw#
+		      ,#userEmail#
+		      ,#userHp#
+		      ,#userTel#
+		      ,'0'
+		      ,#useYn#
+		      ,0
+		      ,NOW()
+		      ,#regUserId#
+		      ,#userIp#
+		      ,NOW()
+		      ,#regUserId#
+		      ,#userIp#
+		      )
+    </insert>
+    
+    <!-- 사용자 권한 인서트  -->
+    <insert id="insertUserAuth">
+		INSERT INTO USER_AUTH /* insertUserAuth */
+              (
+               USER_ID
+              ,AUTH_ID
+              ) 
+		VALUES 
+		      (
+		       #userId#
+		      ,#authId#
+		      )
+    </insert>    
+
+    <!-- 사용자 정보 업데이트  -->
+	<update id="updateUserInfoByUserId">
+		UPDATE USER_INFO /* updateUserInfoByUserId */
+		   SET CORP_ID = #corpId#
+		      ,USER_NM = #userNm#
+		      <isNotEmpty property="userPw">
+		      ,USER_PW = #userPw#
+		      </isNotEmpty>
+		      ,USER_EMAIL = #userEmail#
+		      ,USER_HP = #userHp#
+		      ,USER_TEL = #userTel#
+		      ,USE_YN = #useYn#
+		      ,ACCESS_FAIL_CNT = #accessFailCnt#
+		      ,MOD_DT = NOW()
+		      ,MOD_ID = #regUserId#
+		      ,MOD_IP = #userIp#
+		 WHERE USER_ID = #userId#
+	</update>
+	
+    <!-- 사용자 권한 업데이트  -->
+	<update id="updateUserAuthByUserId">
+		UPDATE USER_AUTH /* updateUserAuthByUserId */
+		   SET AUTH_ID = #authId#
+		 WHERE USER_ID = #userId#
+	</update>	
+
+	<!-- 사용자 정보 삭제  -->
+    <delete id="deleteUserInfoByUserId">
+		DELETE /* deleteUserInfoByUserId */
+		  FROM USER_INFO
+		 WHERE USER_ID = #userId#
+    </delete>  
+    
+	<!-- 사용자 권한 삭제  -->
+    <delete id="deleteUserAuthByUserId">
+		DELETE /* deleteUserAuthByUserId */
+		  FROM USER_AUTH
+		 WHERE USER_ID = #userId#
+    </delete>      
+</sqlMap>
+
+
