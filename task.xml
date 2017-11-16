@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:task="http://www.springframework.org/schema/task"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/task
+        http://www.springframework.org/schema/task/spring-task.xsd">
+
+    <task:scheduler id="scheduler" pool-size="10" />
+    
+    <task:scheduled-tasks scheduler="scheduler">
+        <!-- VWS Mail schedule 추가 2015. 05.19  -->          
+        <task:scheduled ref="mailTaskService" method="searchVwsEmailSend" cron="${portal.task.email}"/>         
+        
+        <task:scheduled ref="taskService" method="searchEmailSend" cron="${portal.task.email}"/>
+        <task:scheduled ref="taskService" method="createDesignEmp" cron="${portal.task.emp}"/>
+        <task:scheduled ref="taskService" method="createOrg" cron="${portal.task.org}"/>
+        <task:scheduled ref="taskService" method="removeTemp" cron="${portal.task.temp}"/>        
+        <!-- 파일전송 상태 검사 -->
+        <task:scheduled ref="taskService" method="modifyTransInfo" cron="${portal.task.trans}"/>        
+        <!-- 화면보안 예외대상자 초기화 -->
+        <task:scheduled ref="taskService" method="removeNonScreenSecurityUser" cron="${portal.task.scrsecu}"/>        
+        <!-- 주간 업무지원 현황(Infra) 메일링 -->
+        <task:scheduled ref="taskService" method="sendWeeklySupportTATInfra" cron="${portal.task.supptatmail}"/>
+        <!-- 월간 업무지원 현황(CAE) 메일링 -->
+        <!-- <task:scheduled ref="taskService" method="sendMonthlySupportTATCAE" cron="${portal.task.supptatmail.monthly}"/> -->
+    	<!-- MDM 인사 정보를 IDM 인사테이블에 저장 -->
+        <!-- <task:scheduled ref="taskService" method="loadUserToIDM" cron="${portal.task.idm.insauser}"/> -->      
+
+        <!-- Design Portal - SmartPIM Sync -->
+        <task:scheduled ref="syncService" method="createSyncData" cron="${designportal.task.sync1}"/>
+        <task:scheduled ref="syncService" method="createSyncData" cron="${designportal.task.sync2}"/>
+        <task:scheduled ref="syncService" method="createSyncData" cron="${designportal.task.sync3}"/>
+
+        <!-- Design Portal - EoD Log Collect -->
+        <task:scheduled ref="eodService" method="searchEodLogCollector" cron="${portal.eod.logcollect}"/>
+    	<!-- Design Portal - Capture Log Collect -->
+        <task:scheduled ref="eodService" method="searchEodCaptureLogCollector" cron="${portal.eod.logcollect}"/>
+        
+        <!-- Design Portal - Mail Batch (프로젝트 등록 및 종료 알림, Report) -->
+        <task:scheduled ref="mailBatchTaskService" method="modifyViewServerCollect" cron="${portal.task.mailbatch}"/>
+        <!-- 2016.07.13, 사용안함 
+        <task:scheduled ref="mailBatchTaskService" method="endPrjNotice" cron="${portal.task.mailbatch}"/> -->
+        <task:scheduled ref="mailBatchTaskService" method="dropPrjNotice" cron="${portal.task.mailbatch}"/>
+        <task:scheduled ref="mailBatchTaskService" method="endSpotNotice" cron="${portal.task.mailbatch}"/>
+        <!-- 업무지원 현황 메일 발송 -->
+        <task:scheduled ref="mailBatchTaskService" method="supportStatus" cron="${portal.task.mailbatch}"/>
+        <!-- 2016.07.13, 변경된 종료메일 발송 -->
+        <task:scheduled ref="mailBatchTaskService" method="endPrjReadonlyNotice" cron="${portal.task.mailbatch}"/>
+                
+        <!-- 우선순위 -->
+        <task:scheduled ref="taskService" method="createPriorityEmailSend" cron="${portal.task.priority.mail}"/>
+        <task:scheduled ref="taskService" method="makeLsfFairShareFile" cron="${portal.task.priority.expire}"/>
+        
+        <!-- 2017.06.22 사용기간 초과 결재 건 삭제 -->
+        <task:scheduled ref="approvalBatchTaskService" method="modifyEndApprvalReject" cron="${portal.task.approval.endreject}"/>
+           
+		<!-- 2017.08.30 이상징후 모니터링 결과 취합 -->
+        <task:scheduled ref="abnormalTaskService" method="startAbnormalHist" cron="${portal.abnormal.execute}"/>
+        
+        <!-- 2017.09.15 이상징후 모니터링 결과 메일링 -->
+        <task:scheduled ref="abnormalTaskService" method="startAbnormalMail" cron="${portal.abnormal.mail.execute}"/>
+        
+        <!-- 2017.09.25 이상징후 대시보드 메일링 -->
+        <task:scheduled ref="abnormalTaskService" method="startDashBoardMail" cron="${portal.abnormal.dash.mail.execute}"/>
+        
+    </task:scheduled-tasks>
+
+</beans>
