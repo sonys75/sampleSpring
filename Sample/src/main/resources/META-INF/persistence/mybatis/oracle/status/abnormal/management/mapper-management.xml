@@ -1,0 +1,958 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="status-abnormal-management">
+
+	<!-- 감지이력 리스트  -->
+    <select id="detectHisList" resultType="hashmap">
+	SELECT
+		TOT_CNT,
+	    RNUM,
+	    HIST_ID,
+	    HIST_SCENARIO_ID,
+	    ABNORMAL_EMP_NO,
+	    HIST_COMMENT,
+	    INS_DTTM,
+	    SCENARIO_ID,
+	    SCENARIO_NM,
+	    SCENARIO_LEVEL_CD,
+	    SCENARIO_LEVEL_NM,
+	    EMP_NM,
+	    EMP_NO,
+	    ORG_NM,
+	    ORG_CD,
+	    EMP_STATUS_CD,
+	    EMP_STATUS_NM,
+	    AUTH_CODE
+	FROM   (
+			SELECT
+				COUNT(HIST_ID) OVER() AS TOT_CNT,
+			    ROWNUM AS RNUM,
+			    HIST_ID,
+			    HIST_SCENARIO_ID,
+			    ABNORMAL_EMP_NO,
+			    HIST_COMMENT,
+			    INS_DTTM,
+			    SCENARIO_ID,
+			    SCENARIO_NM,
+			    SCENARIO_LEVEL_CD,
+			    SCENARIO_LEVEL_NM,
+			    EMP_NM,
+			    EMP_NO,
+			    ORG_NM,
+			    ORG_CD,
+			    EMP_STATUS_CD,
+			    EMP_STATUS_NM,
+			    AUTH_CODE
+				FROM(
+					SELECT
+						A.HIST_ID,
+					    A.HIST_SCENARIO_ID,
+					    A.ABNORMAL_EMP_NO,
+					    A.HIST_COMMENT,
+					    TO_CHAR(A.INS_DTTM,'YYYY-MM-DD HH24:MI:SS') AS INS_DTTM,
+					    B.SCENARIO_ID,
+					    B.SCENARIO_NM,
+					    B.SCENARIO_LEVEL_CD,
+					    FN_GET_CODE_NAME('2841',B.SCENARIO_LEVEL_CD) AS SCENARIO_LEVEL_NM,
+					    C.EMP_NM,
+					    C.EMP_NO,
+					    C.ORG_NM,
+					    C.ORG_CD,
+					    DECODE(D.TARGET_CATEGORY_CD,NULL,'00',D.TARGET_CATEGORY_CD) AS EMP_STATUS_CD,
+					    DECODE(D.TARGET_CATEGORY_CD,NULL,'-','00','-',FN_GET_CODE_NAME('2845',D.TARGET_CATEGORY_CD)) AS EMP_STATUS_NM,
+                        NVL((
+		                    SELECT LISTAGG(COMMON_CODE,'/') WITHIN GROUP (ORDER BY COMMON_CODE)
+		                           AS AUTH
+		                      FROM HYD_COMMON_CODE_INFO A
+		                     WHERE COMMON_GROUP_CODE = '2889'
+		                       AND COMMON_CODE IN ('01','02','03')
+		                       AND COMMON_CODE IN (
+		                                           SELECT BLOCK_TYPE_CD
+		                                             FROM HYD_ABNORMAL_BLOCK
+		                                            WHERE ABNOR_TARGET_ID IN (
+                                                                              SELECT TARGET_ID
+                                                                                FROM HYD_ABNORMAL_TARGET
+                                                                               WHERE DATA_DEL_FG = 'N'
+                                                                                 AND ABNOR_TARGET_EMP_NO = A.ABNORMAL_EMP_NO
+                                                                             )
+		                                          )
+		                   ),'-')
+		                AS AUTH_CODE
+					FROM
+					    HYD_ABNORMAL_HIST A
+					    ,HYD_ABNORMAL_SCENARIO B
+					    ,HYD_V_EMP_INFO C
+					    ,HYD_ABNORMAL_TARGET D
+					<if test="radio == 'project'">
+			            ,VWS_PRJ E
+                        ,VWS_PRJ_MEMBERS F
+                    </if>
+					WHERE
+				  	 	A.HIST_SCENARIO_ID = B.SCENARIO_ID
+					AND
+				  	  	A.ABNORMAL_EMP_NO = C.EMP_NO
+	                AND (A.HIST_SCENARIO_ID, A.ABNORMAL_EMP_NO) NOT IN (
+	                                                                    SELECT EXCEPT_SCENARIO_ID
+	                                                                          ,EXCEPT_EMP_NO
+	                                                                      FROM HYD_ABNORMAL_EXCEPT
+	                                                                     WHERE DATA_DEL_FG = 'N'
+	                                                                   )
+				  	AND
+				  		A.ABNORMAL_EMP_NO = D.ABNOR_TARGET_EMP_NO (+)
+			  		<if test="radio == 'project'">
+			  	 	AND
+                        F.MEMBER_ID = A.ABNORMAL_EMP_NO
+                    AND
+                        E.PRJID = F.PRJID
+				  	</if>
+				  	AND
+				  		A.DATA_DEL_FG = 'N'
+			  		<if test="radio == 'user' and searchText != null and searchText != '' and searchValue != ''">
+						AND C.EMP_NO = #{searchValue}
+		            </if>
+		            <if test="radio == 'user' and searchText != null and searchText != '' and searchValue == ''">
+						AND C.EMP_NM LIKE '%'||#{searchText}||'%'
+		            </if>
+		            <if test="radio == 'department' and searchText != null and searchText != '' and searchValue != ''">
+						AND C.ORG_CD IN (
+										 SELECT ORG_CD
+										   FROM HYD_ORG_INFO
+										  START WITH PAR_ORG_CD = #{searchValue}
+										CONNECT BY PRIOR ORG_CD = PAR_ORG_CD
+										  UNION
+										 SELECT #{searchValue} AS ORG_CD
+										   FROM DUAL
+										)
+		            </if>
+		            <if test="radio == 'department' and searchText != null and searchText != '' and searchValue == ''">
+						AND C.ORG_NM LIKE '%'||#{searchText}||'%'
+		            </if>
+		            <if test="radio == 'project' and searchText != null and searchText != '' and searchValue != ''">
+						AND E.PRJID = #{searchValue}
+		            </if>
+		            <if test="radio == 'project' and searchText != null and searchText != '' and searchValue == ''">
+						AND E.PRJNAME LIKE '%'||#{searchText}||'%'
+		            </if>
+		            <if test="searchStartDttm != null and searchStartDttm != ''">
+		            	AND TO_CHAR(A.INS_DTTM,'YYYY-MM-DD') <![CDATA[>=]]> #{searchStartDttm}
+		            </if>
+		            <if test="searchEndDttm != null and searchEndDttm != ''">
+		            	AND TO_CHAR(A.INS_DTTM,'YYYY-MM-DD') <![CDATA[<=]]> #{searchEndDttm}
+		            </if>
+		            <if test="selDangerLevel != null and selDangerLevel != ''">
+		           		AND B.SCENARIO_LEVEL_CD = #{selDangerLevel}
+		            </if>
+		            <if test="selScenario != null and selScenario != ''">
+		           		AND B.SCENARIO_ID = #{selScenario}
+		            </if>
+		            <if test="selConcenDetect != null and selConcenDetect != ''">
+		           		AND D.TARGET_CATEGORY_CD = #{selConcenDetect}
+		            </if>
+		            ORDER BY
+		    			INS_DTTM DESC
+		    		)
+		    	)
+            <if test="firstRow != null and firstRow != '' and lastRow != null and lastRow != ''">
+    		<![CDATA[
+	         WHERE RNUM >= #{firstRow} AND RNUM <= #{lastRow}
+	        ]]>
+            </if>
+
+    </select>
+
+    <!-- 감지이력 갯수  -->
+    <select id="detectHisListCount" resultType="long">
+
+	SELECT
+		COUNT(HIST_ID)
+		FROM(
+			SELECT
+				A.HIST_ID
+			FROM
+		        HYD_ABNORMAL_HIST A
+			    ,HYD_ABNORMAL_SCENARIO B
+			    ,HYD_V_EMP_INFO C
+			    ,HYD_ABNORMAL_TARGET D
+			<if test="radio == 'project'">
+	            ,VWS_PRJ E
+                ,VWS_PRJ_MEMBERS F
+            </if>
+			WHERE
+		  	 	A.HIST_SCENARIO_ID = B.SCENARIO_ID
+			AND
+		  	  	A.ABNORMAL_EMP_NO = C.EMP_NO
+            AND (A.HIST_SCENARIO_ID, A.ABNORMAL_EMP_NO) NOT IN (
+                                                                SELECT EXCEPT_SCENARIO_ID
+                                                                      ,EXCEPT_EMP_NO
+                                                                  FROM HYD_ABNORMAL_EXCEPT
+                                                                 WHERE DATA_DEL_FG = 'N'
+                                                               )
+		  	AND
+		  		A.ABNORMAL_EMP_NO = D.ABNOR_TARGET_EMP_NO (+)
+		<if test="radio == 'project'">
+  	 		AND
+                F.MEMBER_ID = A.ABNORMAL_EMP_NO
+            AND
+                E.PRJID = F.PRJID
+	  	</if>
+		  	AND
+		  		A.DATA_DEL_FG = 'N'
+	  		<if test="radio == 'user' and searchText != null and searchText != '' and searchValue != ''">
+				AND C.EMP_NO = #{searchValue}
+            </if>
+            <if test="radio == 'user' and searchText != null and searchText != '' and searchValue == ''">
+				AND C.EMP_NM LIKE '%'||#{searchText}||'%'
+            </if>
+            <if test="radio == 'department' and searchText != null and searchText != '' and searchValue != ''">
+				AND C.ORG_CD IN (
+								 SELECT ORG_CD
+								   FROM HYD_ORG_INFO
+								  START WITH PAR_ORG_CD = #{searchValue}
+								CONNECT BY PRIOR ORG_CD = PAR_ORG_CD
+								  UNION
+								 SELECT #{searchValue} AS ORG_CD
+								   FROM DUAL
+								)
+            </if>
+             <if test="radio == 'department' and searchText != null and searchText != '' and searchValue == ''">
+				AND C.ORG_NM LIKE '%'||#{searchText}||'%'
+            </if>
+            <if test="radio == 'project' and searchText != null and searchText != '' and searchValue != ''">
+				AND E.PRJID = #{searchValue}
+            </if>
+            <if test="radio == 'project' and searchText != null and searchText != '' and searchValue == ''">
+				AND E.PRJNAME LIKE '%'||#{searchText}||'%'
+            </if>
+            <if test="searchStartDttm != null and searchStartDttm != ''">
+            	AND TO_CHAR(A.INS_DTTM,'YYYY-MM-DD') <![CDATA[>=]]> #{searchStartDttm}
+            </if>
+            <if test="searchEndDttm != null and searchEndDttm != ''">
+            	AND TO_CHAR(A.INS_DTTM,'YYYY-MM-DD') <![CDATA[<=]]> #{searchEndDttm}
+            </if>
+            <if test="selDangerLevel != null and selDangerLevel != ''">
+           		AND B.SCENARIO_LEVEL_CD = #{selDangerLevel}
+            </if>
+            <if test="selScenario != null and selScenario != ''">
+           		AND B.SCENARIO_ID = #{selScenario}
+            </if>
+            <if test="selConcenDetect != null and selConcenDetect != ''">
+           		AND D.TARGET_CATEGORY_CD = #{selConcenDetect}
+            </if>
+    		)
+
+
+
+    </select>
+
+    <!-- 예외사용  리스트  -->
+    <select id="etcUseList" resultType="hashmap">
+		SELECT
+			TOT_CNT,
+			RNUM,
+		    INS_DTTM,
+		    EXCEPT_ID,
+		    EXCEPT_COMMENT,
+		    SCENARIO_NM,
+		    SCENARIO_DESC,
+		    SCENARIO_ID,
+		    ORG_NM,
+		    ORG_CD,
+		    EMP_NM,
+		    EMP_NO
+		FROM(
+				SELECT
+					TOT_CNT,
+					ROWNUM AS RNUM,
+				    INS_DTTM,
+				    EXCEPT_ID,
+				    EXCEPT_COMMENT,
+				    SCENARIO_NM,
+				    SCENARIO_DESC,
+				    SCENARIO_ID,
+				    ORG_NM,
+				    ORG_CD,
+				    EMP_NM,
+				    EMP_NO
+				FROM(
+					SELECT
+						COUNT(EXCEPT_ID) OVER() AS TOT_CNT,
+					    INS_DTTM,
+					    EXCEPT_ID,
+					    NVL(EXCEPT_COMMENT,' ') AS EXCEPT_COMMENT,
+					    SCENARIO_NM,
+					    SCENARIO_DESC,
+					    SCENARIO_ID,
+					    ORG_NM,
+					    ORG_CD,
+					    EMP_NM,
+					    EMP_NO
+					FROM(
+						SELECT
+
+						    TO_CHAR(A.UPD_DTTM,'YYYY-MM-DD HH24:MI:SS') AS INS_DTTM,
+						    A.EXCEPT_ID,
+						    A.EXCEPT_COMMENT,
+						    B.SCENARIO_NM,
+						    B.SCENARIO_DESC,
+						    B.SCENARIO_ID,
+						    C.ORG_NM,
+						    C.ORG_CD,
+						    C.EMP_NM,
+						    C.EMP_NO
+						FROM
+						    HYD_ABNORMAL_EXCEPT A
+						   ,HYD_ABNORMAL_SCENARIO B
+						   ,HYD_V_EMP_INFO C
+					    <if test="radio == 'project'">
+				           ,VWS_PRJ D
+			               ,VWS_PRJ_MEMBERS E
+			            </if>
+						WHERE
+						    A.EXCEPT_SCENARIO_ID = B.SCENARIO_ID (+)
+						AND
+						    A.EXCEPT_EMP_NO = C.EMP_NO
+				    	<if test="radio == 'project'">
+			  	 		AND
+			                E.MEMBER_ID = A.EXCEPT_EMP_NO
+			            AND
+			                D.PRJID = E.PRJID
+					  	</if>
+						AND
+						    A.DATA_DEL_FG = 'N'
+
+						<if test="radio == 'user' and searchText != null and searchText != '' and searchValue != ''">
+							AND C.EMP_NO = #{searchValue}
+			            </if>
+			            <if test="radio == 'user' and searchText != null and searchText != '' and searchValue == ''">
+							AND C.EMP_NM LIKE '%'||#{searchText}||'%'
+			            </if>
+			            <if test="radio == 'department' and searchText != null and searchText != '' and searchValue != ''">
+							AND C.ORG_CD IN (
+											 SELECT ORG_CD
+											   FROM HYD_ORG_INFO
+											  START WITH PAR_ORG_CD = #{searchValue}
+											CONNECT BY PRIOR ORG_CD = PAR_ORG_CD
+											  UNION
+											 SELECT #{searchValue} AS ORG_CD
+											   FROM DUAL
+											)
+			            </if>
+			            <if test="radio == 'department' and searchText != null and searchText != '' and searchValue == ''">
+							AND C.ORG_NM LIKE '%'||#{searchText}||'%'
+			            </if>
+			            <if test="radio == 'project' and searchText != null and searchText != '' and searchValue != ''">
+							AND D.PRJID = #{searchValue}
+			            </if>
+			            <if test="radio == 'project' and searchText != null and searchText != '' and searchValue == ''">
+							AND D.PRJNAME LIKE '%'||#{searchText}||'%'
+			            </if>
+			            <if test="searchStartDttm != null and searchStartDttm != ''">
+			            	AND TO_CHAR(A.UPD_DTTM,'YYYY-MM-DD') <![CDATA[>=]]> #{searchStartDttm}
+			            </if>
+			            <if test="searchEndDttm != null and searchEndDttm != ''">
+			            	AND TO_CHAR(A.UPD_DTTM,'YYYY-MM-DD') <![CDATA[<=]]> #{searchEndDttm}
+			            </if>
+						<if test="selScenario != null and selScenario != ''">
+			            	AND B.SCENARIO_ID = #{selScenario}
+			            </if>
+						)
+						ORDER BY
+							INS_DTTM DESC
+					)
+				)
+            <if test="firstRow != null and firstRow != '' and lastRow != null and lastRow != ''">
+            <![CDATA[
+             WHERE RNUM >= #{firstRow} AND RNUM <= #{lastRow}
+            ]]>
+            </if>
+	</select>
+
+	 <!-- 예외사용  리스트  -->
+    <select id="etcUseListCount" resultType="long">
+	SELECT
+		COUNT(EXCEPT_ID)
+	FROM(
+		SELECT
+			COUNT(EXCEPT_ID) OVER() AS TOT_CNT,
+		    INS_DTTM,
+		    EXCEPT_ID,
+		    NVL(EXCEPT_COMMENT,' ') AS EXCEPT_COMMENT,
+		    SCENARIO_NM,
+		    SCENARIO_DESC,
+		    SCENARIO_ID,
+		    ORG_NM,
+		    ORG_CD,
+		    EMP_NM,
+		    EMP_NO
+		FROM(
+			SELECT
+
+			    TO_CHAR(A.UPD_DTTM,'YYYY-MM-DD HH24:MI:SS') AS INS_DTTM,
+			    A.EXCEPT_ID,
+			    A.EXCEPT_COMMENT,
+			    B.SCENARIO_NM,
+			    B.SCENARIO_DESC,
+			    B.SCENARIO_ID,
+			    C.ORG_NM,
+			    C.ORG_CD,
+			    C.EMP_NM,
+			    C.EMP_NO
+			FROM
+			    HYD_ABNORMAL_EXCEPT A
+			   ,HYD_ABNORMAL_SCENARIO B
+			   ,HYD_V_EMP_INFO C
+		    <if test="radio == 'project'">
+	           ,VWS_PRJ D
+               ,VWS_PRJ_MEMBERS E
+            </if>
+			WHERE
+			    A.EXCEPT_SCENARIO_ID = B.SCENARIO_ID (+)
+			AND
+			    A.EXCEPT_EMP_NO = C.EMP_NO
+		    <if test="radio == 'project'">
+  	 		AND
+                E.MEMBER_ID = A.EXCEPT_EMP_NO
+            AND
+                D.PRJID = E.PRJID
+		  	</if>
+			AND
+			    A.DATA_DEL_FG = 'N'
+			<if test="radio == 'user' and searchText != null and searchText != '' and searchValue != ''">
+				AND C.EMP_NO = #{searchValue}
+            </if>
+            <if test="radio == 'user' and searchText != null and searchText != '' and searchValue == ''">
+				AND C.EMP_NM LIKE '%'||#{searchText}||'%'
+            </if>
+            <if test="radio == 'department' and searchText != null and searchText != '' and searchValue != ''">
+				AND C.ORG_CD IN (
+								 SELECT ORG_CD
+								   FROM HYD_ORG_INFO
+								  START WITH PAR_ORG_CD = #{searchValue}
+								CONNECT BY PRIOR ORG_CD = PAR_ORG_CD
+								  UNION
+								 SELECT #{searchValue} AS ORG_CD
+								   FROM DUAL
+								)
+            </if>
+            <if test="radio == 'department' and searchText != null and searchText != '' and searchValue == ''">
+				AND C.ORG_NM LIKE '%'||#{searchText}||'%'
+            </if>
+            <if test="radio == 'project' and searchText != null and searchText != '' and searchValue != ''">
+				AND D.PRJID = #{searchValue}
+            </if>
+            <if test="radio == 'project' and searchText != null and searchText != '' and searchValue == ''">
+				AND D.PRJNAME LIKE '%'||#{searchText}||'%'
+            </if>
+            <if test="searchStartDttm != null and searchStartDttm != ''">
+            	AND TO_CHAR(A.UPD_DTTM,'YYYY-MM-DD') <![CDATA[>=]]> #{searchStartDttm}
+            </if>
+            <if test="searchEndDttm != null and searchEndDttm != ''">
+            	AND TO_CHAR(A.UPD_DTTM,'YYYY-MM-DD') <![CDATA[<=]]> #{searchEndDttm}
+            </if>
+			<if test="selScenario != null and selScenario != ''">
+            	AND B.SCENARIO_ID = #{selScenario}
+            </if>
+			)
+			ORDER BY
+				INS_DTTM DESC
+		)
+	</select>
+
+	<!-- 집중감지  리스트  -->
+    <select id="concenDetectList" resultType="hashmap">
+		SELECT RNUM
+		      ,TOT_CNT
+		      ,EMP_STATUS_CD
+		      ,EMP_STATUS_NM
+		      ,EMP_NO
+		      ,EMP_NM
+		      ,ORG_CD
+		      ,ORG_NM
+		      ,AUTH
+		      ,AUTH_CODE
+		      ,INS_DTTM
+		      ,CONNECT_CNT
+		      ,TRANS_CNT
+		      ,DOWN_CNT
+		      ,REGIST_TYPE
+		  FROM (
+		        SELECT ROW_NUMBER() OVER (ORDER BY A.UPD_DTTM DESC)
+		               AS RNUM
+		              ,COUNT(C.EMP_NO) OVER()
+		               AS TOT_CNT
+		              ,B.TARGET_CATEGORY_CD
+		               AS EMP_STATUS_CD
+		              ,B.EMP_STATUS_NM
+		              ,C.EMP_NO
+		              ,C.EMP_NM
+		              ,C.ORG_NM
+		              ,C.ORG_CD
+		              ,NVL((
+		                    SELECT LISTAGG(COMMON_CODE_NM,'/') WITHIN GROUP (ORDER BY COMMON_CODE)
+		                           AS AUTH
+		                      FROM HYD_COMMON_CODE_INFO A
+		                     WHERE COMMON_GROUP_CODE = '2889'
+		                       AND COMMON_CODE IN ('01','02','03')
+		                       AND COMMON_CODE IN (
+		                                           SELECT BLOCK_TYPE_CD
+		                                             FROM HYD_ABNORMAL_BLOCK
+		                                            WHERE ABNOR_TARGET_ID = A.TARGET_ID
+		                                          )
+		                   ),'-')
+		               AS AUTH
+		              ,NVL((
+		                    SELECT LISTAGG(COMMON_CODE,'/') WITHIN GROUP (ORDER BY COMMON_CODE)
+		                           AS AUTH
+		                      FROM HYD_COMMON_CODE_INFO A
+		                     WHERE COMMON_GROUP_CODE = '2889'
+		                       AND COMMON_CODE IN ('01','02','03')
+		                       AND COMMON_CODE IN (
+		                                           SELECT BLOCK_TYPE_CD
+		                                             FROM HYD_ABNORMAL_BLOCK
+		                                            WHERE ABNOR_TARGET_ID = A.TARGET_ID
+		                                          )
+		                   ),'-')
+		               AS AUTH_CODE
+		              ,'-' AS REGIST_TYPE
+		              ,B.CONNECT_CNT
+		              ,B.TRANS_CNT
+		              ,B.DOWN_CNT
+		              ,TO_CHAR(A.UPD_DTTM,'YYYY-MM-DD HH24:MI:SS') AS INS_DTTM
+		          FROM HYD_ABNORMAL_TARGET A
+		         INNER JOIN (
+		                    SELECT Z.TARGET_CATEGORY_CD
+		                          ,FN_GET_CODE_NAME('2845',Z.TARGET_CATEGORY_CD)
+		                           AS EMP_STATUS_NM
+		                          ,Z.ABNOR_TARGET_EMP_NO
+		                          ,SUM(NVL(CONNECT_CNT,0))
+		                           AS CONNECT_CNT
+		                          ,SUM(NVL(TRANS_CNT,0))
+		                           AS TRANS_CNT
+		                          ,SUM(NVL(DOWN_CNT,0))
+		                           AS DOWN_CNT
+		                          ,AUTH_CD
+		                      FROM (
+		                            SELECT A.TARGET_CATEGORY_CD
+		                                  ,A.ABNOR_TARGET_EMP_NO
+		                                  ,CASE WHEN B.MON_TYPE_CD = '01' THEN 1 END
+		                                   AS CONNECT_CNT
+		                                  ,CASE WHEN B.MON_TYPE_CD = '02' THEN 1 END
+		                                   AS TRANS_CNT
+		                                  ,CASE WHEN B.MON_TYPE_CD = '03' THEN 1 END
+		                                   AS DOWN_CNT
+		                                  ,NVL((
+		                                        SELECT LISTAGG(BLOCK_TYPE_CD,'/') WITHIN GROUP (ORDER BY BLOCK_TYPE_CD)
+		                                          FROM HYD_ABNORMAL_BLOCK
+		                                         WHERE ABNOR_TARGET_ID = A.TARGET_ID
+		                                       )
+		                                      ,'-')
+		                                   AS AUTH_CD
+		                              FROM HYD_ABNORMAL_TARGET A
+		                              LEFT OUTER JOIN HYD_ABNORMAL_MON B
+		                                           ON A.ABNOR_TARGET_EMP_NO = B.MON_USAGE_EMP_NO
+		                                          AND B.MON_TYPE_CD IN ('01','02','03')
+		                                          AND TO_CHAR(B.INS_DTTM,'YYYY-MM-DD') <![CDATA[ >= ]]> #{searchStartDttm}
+		                                          AND TO_CHAR(B.INS_DTTM,'YYYY-MM-DD') <![CDATA[ <= ]]> #{searchEndDttm}
+		                             INNER JOIN HYD_V_EMP_INFO C
+		                                     ON A.ABNOR_TARGET_EMP_NO = C.EMP_NO
+		                             WHERE A.DATA_DEL_FG = 'N'
+		                             <if test="radio == 'user' and searchText != null and searchText != '' and searchValue != ''">
+		                               AND C.EMP_NO = #{searchValue}
+		                             </if>
+		                             <if test="radio == 'user' and searchText != null and searchText != '' and searchValue == ''">
+		                               AND C.EMP_NM LIKE '%'||#{searchText}||'%'
+		                             </if>
+		                             <if test="radio == 'department' and searchText != null and searchText != '' and searchValue != ''">
+		                               AND C.ORG_CD IN (
+		                                                SELECT ORG_CD
+		                                                  FROM HYD_ORG_INFO
+		                                                 START WITH PAR_ORG_CD = #{searchValue}
+		                                               CONNECT BY PRIOR ORG_CD = PAR_ORG_CD
+		                                                 UNION
+		                                                SELECT #{searchValue} AS ORG_CD
+		                                                  FROM DUAL
+		                                               )
+		                             </if>
+		                             <if test="radio == 'department' and searchText != null and searchText != '' and searchValue == ''">
+		                               AND C.ORG_NM LIKE '%'||#{searchText}||'%'
+		                             </if>
+		                             <if test="radio == 'project' and searchText != null and searchText != '' and searchValue != ''">
+		                               AND C.EMP_NO IN (
+		                                                SELECT MEMBER_ID
+		                                                  FROM VWS_PRJ_MEMBERS
+		                                                 WHERE PRJID = #{searchValue}
+		                                               )
+		                             </if>
+		                             <if test="radio == 'project' and searchText != null and searchText != '' and searchValue == ''">
+		                               AND C.EMP_NO IN (
+		                                                SELECT MEMBER_ID
+		                                                  FROM VWS_PRJ_MEMBERS
+		                                                 WHERE PRJID IN (
+		                                                                 SELECT PRJID
+		                                                                   FROM VWS_PRJ
+		                                                                  WHERE PRJNAME LIKE '%'||#{searchText}||'%'
+		                                                                )
+		                                               )
+		                             </if>
+		                             <if test="selConcenDetect != null and selConcenDetect != ''">
+		                               AND A.TARGET_CATEGORY_CD = #{selConcenDetect}
+		                             </if>
+		                           ) Z
+		                     GROUP BY Z.TARGET_CATEGORY_CD
+		                             ,Z.ABNOR_TARGET_EMP_NO
+		                             ,Z.AUTH_CD
+		                    ) B
+		                 ON A.TARGET_CATEGORY_CD = B.TARGET_CATEGORY_CD
+		                AND A.ABNOR_TARGET_EMP_NO = B.ABNOR_TARGET_EMP_NO
+				       <if test="chkAll != '00'">
+					       <if test="chkConnect != null and chkConnect != '' and chkTrans != null and chkTrans != '' and chkDown != null and chkDown != ''">
+				         		 AND AUTH_CD = #{chkConnect} || '/' || #{chkTrans} || '/' || #{chkDown}
+				           </if>
+				           <if test="chkConnect != null and chkConnect != '' and chkTrans != null and chkTrans != '' and chkDown == undifined">
+				         		 AND AUTH_CD = #{chkConnect} || '/' || #{chkTrans}
+				           </if>
+				           <if test="chkConnect != null and chkConnect != '' and chkTrans == undifined and chkDown != null and chkDown != ''">
+				         		 AND AUTH_CD = #{chkConnect} || '/' || #{chkDown}
+				           </if>
+				           <if test="chkConnect == undifined and chkTrans != null and chkTrans != '' and chkDown != null and chkDown != ''">
+				         		 AND AUTH_CD = #{chkTrans} || '/' || #{chkDown}
+				           </if>
+				           <if test="chkConnect != null and chkConnect != '' and chkTrans == undifined and chkDown == undifined">
+				         		 AND AUTH_CD = #{chkConnect}
+				           </if>
+				           <if test="chkConnect == undifined and chkTrans != null and chkTrans != '' and chkDown == undifined">
+				         		 AND AUTH_CD = #{chkTrans}
+				           </if>
+				           <if test="chkConnect == undifined and chkTrans == undifined and chkDown != null and chkDown != ''">
+				         		 AND AUTH_CD = #{chkDown}
+				           </if>
+				           <if test="chkConnect == undifined and chkTrans == undifined and chkDown == undifined">
+					      		 AND AUTH_CD = '-'
+					       </if>
+				       </if>
+		         INNER JOIN HYD_V_EMP_INFO C
+		                 ON A.ABNOR_TARGET_EMP_NO = C.EMP_NO
+		       )
+            <if test="firstRow != null and firstRow != '' and lastRow != null and lastRow != ''">
+            <![CDATA[
+             WHERE RNUM >= #{firstRow} AND RNUM <= #{lastRow}
+            ]]>
+            </if>
+
+	</select>
+
+	<!-- 집중감지  카운트 -->
+    <select id="concenDetectListCount" resultType="long">
+        SELECT COUNT(*) AS CNT
+          FROM HYD_ABNORMAL_TARGET A
+         INNER JOIN (
+                    SELECT Z.TARGET_CATEGORY_CD
+                          ,Z.ABNOR_TARGET_EMP_NO
+                          ,AUTH_CD
+                      FROM (
+                            SELECT A.TARGET_CATEGORY_CD
+                                  ,A.ABNOR_TARGET_EMP_NO
+                                  ,NVL((
+                                        SELECT LISTAGG(BLOCK_TYPE_CD,'/') WITHIN GROUP (ORDER BY BLOCK_TYPE_CD)
+                                          FROM HYD_ABNORMAL_BLOCK
+                                         WHERE ABNOR_TARGET_ID = A.TARGET_ID
+                                       )
+                                      ,'-')
+                                   AS AUTH_CD
+                              FROM HYD_ABNORMAL_TARGET A
+                              LEFT OUTER JOIN HYD_ABNORMAL_MON B
+                                           ON A.ABNOR_TARGET_EMP_NO = B.MON_USAGE_EMP_NO
+                                          AND B.MON_TYPE_CD IN ('01','02','03')
+                                          AND TO_CHAR(B.INS_DTTM,'YYYY-MM-DD') <![CDATA[ >= ]]> #{searchStartDttm}
+                                          AND TO_CHAR(B.INS_DTTM,'YYYY-MM-DD') <![CDATA[ <= ]]> #{searchEndDttm}
+                             INNER JOIN HYD_V_EMP_INFO C
+                                     ON A.ABNOR_TARGET_EMP_NO = C.EMP_NO
+                             WHERE A.DATA_DEL_FG = 'N'
+                             <if test="radio == 'user' and searchText != null and searchText != '' and searchValue != ''">
+                               AND C.EMP_NO = #{searchValue}
+                             </if>
+                             <if test="radio == 'user' and searchText != null and searchText != '' and searchValue == ''">
+                               AND C.EMP_NM LIKE '%'||#{searchText}||'%'
+                             </if>
+                             <if test="radio == 'department' and searchText != null and searchText != '' and searchValue != ''">
+                               AND C.ORG_CD IN (
+                                                SELECT ORG_CD
+                                                  FROM HYD_ORG_INFO
+                                                 START WITH PAR_ORG_CD = #{searchValue}
+                                               CONNECT BY PRIOR ORG_CD = PAR_ORG_CD
+                                                 UNION
+                                                SELECT #{searchValue} AS ORG_CD
+                                                  FROM DUAL
+                                               )
+                             </if>
+                             <if test="radio == 'department' and searchText != null and searchText != '' and searchValue == ''">
+                               AND C.ORG_NM LIKE '%'||#{searchText}||'%'
+                             </if>
+                             <if test="radio == 'project' and searchText != null and searchText != '' and searchValue != ''">
+                               AND C.EMP_NO IN (
+                                                SELECT MEMBER_ID
+                                                  FROM VWS_PRJ_MEMBERS
+                                                 WHERE PRJID = #{searchValue}
+                                               )
+                             </if>
+                             <if test="radio == 'project' and searchText != null and searchText != '' and searchValue == ''">
+                               AND C.EMP_NO IN (
+                                                SELECT MEMBER_ID
+                                                  FROM VWS_PRJ_MEMBERS
+                                                 WHERE PRJID IN (
+                                                                 SELECT PRJID
+                                                                   FROM VWS_PRJ
+                                                                  WHERE PRJNAME LIKE '%'||#{searchText}||'%'
+                                                                )
+                                               )
+                             </if>
+                             <if test="selConcenDetect != null and selConcenDetect != ''">
+                               AND A.TARGET_CATEGORY_CD = #{selConcenDetect}
+                             </if>
+                           ) Z
+                     GROUP BY Z.TARGET_CATEGORY_CD
+                             ,Z.ABNOR_TARGET_EMP_NO
+                             ,Z.AUTH_CD
+                    ) B
+                 ON A.TARGET_CATEGORY_CD = B.TARGET_CATEGORY_CD
+                AND A.ABNOR_TARGET_EMP_NO = B.ABNOR_TARGET_EMP_NO
+		       <if test="chkAll != '00'">
+			       <if test="chkConnect != null and chkConnect != '' and chkTrans != null and chkTrans != '' and chkDown != null and chkDown != ''">
+		         		 AND AUTH_CD = #{chkConnect} || '/' || #{chkTrans} || '/' || #{chkDown}
+		           </if>
+		           <if test="chkConnect != null and chkConnect != '' and chkTrans != null and chkTrans != '' and chkDown == undifined">
+		         		 AND AUTH_CD = #{chkConnect} || '/' || #{chkTrans}
+		           </if>
+		           <if test="chkConnect != null and chkConnect != '' and chkTrans == undifined and chkDown != null and chkDown != ''">
+		         		 AND AUTH_CD = #{chkConnect} || '/' || #{chkDown}
+		           </if>
+		           <if test="chkConnect == undifined and chkTrans != null and chkTrans != '' and chkDown != null and chkDown != ''">
+		         		 AND AUTH_CD = #{chkTrans} || '/' || #{chkDown}
+		           </if>
+		           <if test="chkConnect != null and chkConnect != '' and chkTrans == undifined and chkDown == undifined">
+		         		 AND AUTH_CD = #{chkConnect}
+		           </if>
+		           <if test="chkConnect == undifined and chkTrans != null and chkTrans != '' and chkDown == undifined">
+		         		 AND AUTH_CD = #{chkTrans}
+		           </if>
+		           <if test="chkConnect == undifined and chkTrans == undifined and chkDown != null and chkDown != ''">
+		         		 AND AUTH_CD = #{chkDown}
+		           </if>
+			       <if test="chkConnect == undifined and chkTrans == undifined and chkDown == undifined">
+			      		 AND AUTH_CD = '-'
+			       </if>
+		       </if>
+         INNER JOIN HYD_V_EMP_INFO C
+                 ON A.ABNOR_TARGET_EMP_NO = C.EMP_NO
+	</select>
+
+  	<!-- 시나리오코드 목록 -->
+    <select id="searchScenarioCodeList" resultType="hashmap">
+
+		  SELECT
+			    SCENARIO_ID,
+			    SCENARIO_TYPE_CD,
+			    SCENARIO_NM,
+			    SCENARIO_DESC,
+			    SCENARIO_LEVEL_CD
+			FROM
+			    HYD_ABNORMAL_SCENARIO
+		   WHERE
+			    DATA_DEL_FG = 'N'
+		ORDER BY
+			    SCENARIO_ID
+
+    </select>
+
+    <!--시스템 관리자인지 확인-->
+    <select id="searchUserAuth" resultType="String">
+
+		SELECT
+	   		CASE
+		   		WHEN AUTH_GROUP_CD = '000002' THEN 'Y'
+		   		ELSE 'N'
+		   	END AS AUTH_GROUP_CD_YN
+		FROM
+		    HYD_AUTH_GROUP_MAPPING
+		WHERE AUTH_EMP_NO = #{sessEmpNo}
+		AND
+		    AUTH_GROUP_CD IN('000002')
+
+    </select>
+
+     <!-- 감지이력 예외처리 -->
+    <insert id="etcOkay">
+
+    	   MERGE INTO HYD_ABNORMAL_EXCEPT
+		   USING DUAL ON (EXCEPT_EMP_NO = #{memberId} AND EXCEPT_SCENARIO_ID = #{scenarioCd})
+    	   WHEN MATCHED THEN
+    		  	UPDATE SET EXCEPT_COMMENT = #{etcReason}
+  		  	   			  ,DATA_DEL_FG = 'N'
+			              ,UPD_EMP_NO = #{sessEmpNo}
+						  ,UPD_DTTM = SYSDATE
+   		  	WHEN NOT MATCHED THEN
+
+				INSERT
+				     (
+				    EXCEPT_ID
+		            ,EXCEPT_SCENARIO_ID
+		            ,EXCEPT_EMP_NO
+		            ,EXCEPT_COMMENT
+		            ,DATA_DEL_FG
+		            ,INS_EMP_NO
+		            ,INS_DTTM
+		            ,UPD_EMP_NO
+					,UPD_DTTM
+				    )
+				VALUES
+				    (
+					 (SELECT MAX(EXCEPT_ID) + 1 FROM HYD_ABNORMAL_EXCEPT)
+		             ,#{scenarioCd}
+		             ,#{memberId}
+		             ,#{etcReason}
+		             ,'N'
+		             ,#{sessEmpNo}
+		             ,SYSDATE
+		             ,#{sessEmpNo}
+		             ,SYSDATE
+			        )
+
+    </insert>
+
+    <!-- 예외사용 등록 -->
+    <insert id="saveEtcUse">
+
+    	MERGE
+		   		INTO HYD_ABNORMAL_EXCEPT
+		   USING dual
+			  	ON (EXCEPT_EMP_NO = #{memberId} AND EXCEPT_SCENARIO_ID = #{chgScenarioCd})
+    	   WHEN MATCHED THEN
+    		  	UPDATE SET
+    		  	   				 EXCEPT_COMMENT	 	= #{etcReason}
+    		  	   				,DATA_DEL_FG		= 'N'
+					            ,UPD_EMP_NO	  	  	= #{sessEmpNo}
+								,UPD_DTTM	  	  	= SYSDATE
+    		  	WHEN NOT MATCHED THEN
+
+				INSERT
+				     (
+				    EXCEPT_ID
+		            ,EXCEPT_SCENARIO_ID
+		            ,EXCEPT_EMP_NO
+		            ,EXCEPT_COMMENT
+		            ,DATA_DEL_FG
+		            ,INS_EMP_NO
+		            ,INS_DTTM
+		            ,UPD_EMP_NO
+					,UPD_DTTM
+				    )
+				VALUES
+				    (
+					 (SELECT MAX(EXCEPT_ID) + 1 FROM HYD_ABNORMAL_EXCEPT)
+		             ,#{chgScenarioCd}
+		             ,#{memberId}
+		             ,#{etcReason}
+		             ,'N'
+		             ,#{sessEmpNo}
+		             ,SYSDATE
+		             ,#{sessEmpNo}
+		             ,SYSDATE
+			        )
+
+    </insert>
+
+    <!-- 예외사용 해제 -->
+    <update id="etcUseDel">
+    	UPDATE HYD_ABNORMAL_EXCEPT
+	       SET DATA_DEL_FG = 'Y'
+    		  ,UPD_EMP_NO = #{sessEmpNo}
+			  ,UPD_DTTM   = SYSDATE
+		 WHERE EXCEPT_EMP_NO = #{memberId}
+		   AND EXCEPT_SCENARIO_ID = #{scenarioId}
+    </update>
+
+
+    <!-- 집중감지 권한 설정 -->
+    <insert id="saveAuthControll">
+		 INSERT INTO HYD_ABNORMAL_BLOCK
+		       (
+		        BLOCK_ID
+		       ,ABNOR_TARGET_ID
+		       ,BLOCK_TYPE_CD
+		       ,DATA_DEL_FG
+		       ,INS_EMP_NO
+		       ,INS_DTTM
+		       ,UPD_EMP_NO
+		       ,UPD_DTTM
+		       )
+		VALUES (
+		        (SELECT NVL(MAX(BLOCK_ID),0) + 1 FROM HYD_ABNORMAL_BLOCK)
+		       ,(SELECT TARGET_ID
+		           FROM HYD_ABNORMAL_TARGET
+		          WHERE ABNOR_TARGET_EMP_NO = #{memberId})
+		       ,#{checkAuth}
+		       ,'N'
+		       ,#{sessEmpNo}
+		       ,SYSDATE
+		       ,#{sessEmpNo}
+		       ,SYSDATE
+		       )
+    </insert>
+
+    <!-- 집중감지 권한 차단 삭제 -->
+    <delete  id="deleteAuthControll">
+		DELETE FROM HYD_ABNORMAL_BLOCK
+		 WHERE ABNOR_TARGET_ID = (SELECT TARGET_ID
+		                            FROM HYD_ABNORMAL_TARGET
+		                           WHERE ABNOR_TARGET_EMP_NO = #{memberId})
+    </delete>
+
+    <!-- 집중감지 대상등록 -->
+    <insert id="saveConcenDetect">
+	   MERGE INTO HYD_ABNORMAL_TARGET
+	   USING DUAL ON (ABNOR_TARGET_EMP_NO = #{memberId})
+   	    WHEN MATCHED
+   	         THEN
+			      UPDATE
+			 	     SET TARGET_CATEGORY_CD = #{selConcen}
+  		  			    ,DATA_DEL_FG = 'N'
+			            ,UPD_EMP_NO = #{sessEmpNo}
+					    ,UPD_DTTM = SYSDATE
+   	    WHEN NOT MATCHED
+   	         THEN
+				  INSERT (
+					      TARGET_ID
+				         ,ABNOR_TARGET_EMP_NO
+				         ,TARGET_CATEGORY_CD
+				         ,DATA_DEL_FG
+				         ,INS_EMP_NO
+				         ,INS_DTTM
+				         ,UPD_EMP_NO
+						 ,UPD_DTTM
+					     )
+			      VALUES (
+					      (SELECT MAX(TARGET_ID) + 1 FROM HYD_ABNORMAL_TARGET)
+				         ,#{memberId}
+				         ,#{selConcen}
+				         ,'N'
+				         ,#{sessEmpNo}
+				         ,SYSDATE
+				         ,#{sessEmpNo}
+				         ,SYSDATE
+				         )
+    </insert>
+
+    <!-- 집중감지 삭제 -->
+    <update id="concenDel">
+    	UPDATE HYD_ABNORMAL_TARGET
+	       SET DATA_DEL_FG = 'Y'
+	    	  ,TARGET_CATEGORY_CD = '00'
+    		  ,UPD_EMP_NO = #{sessEmpNo}
+			  ,UPD_DTTM   = SYSDATE
+		 WHERE ABNOR_TARGET_EMP_NO = #{memberId}
+    </update>
+
+
+
+</mapper>
