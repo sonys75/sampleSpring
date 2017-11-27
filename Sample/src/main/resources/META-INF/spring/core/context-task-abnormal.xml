@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:task="http://www.springframework.org/schema/task"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/task
+        http://www.springframework.org/schema/task/spring-task.xsd">
+
+    <task:scheduler id="scheduler" pool-size="10" />
+    
+    <task:scheduled-tasks scheduler="scheduler">
+        <!-- 2017.08.30 이상징후 모니터링 결과 취합 -->
+        <task:scheduled ref="abnormalTaskService" method="startAbnormalHist" cron="${portal.abnormal.execute}"/>
+        <!-- <task:scheduled ref="abnormalTaskService" method="startAbnormalHist" cron="0 */5 8-17 * * MON,TUE,WED,THU,FRI"/> -->
+
+        <!-- 2017.09.12 이상징후 모니터링 결과 메일링 -->
+        <!-- <task:scheduled ref="abnormalTaskService" method="startAbnormalMail" cron="${portal.abnormal.mail.execute}"/> -->
+
+        <!-- 2017.09.25 이상징후 대시보드 메일링 -->
+        <!-- <task:scheduled ref="abnormalTaskService" method="startDashBoardMail" cron="${portal.abnormal.dash.mail.execute}"/> -->
+
+        <!-- 2017.10.12 이상징후 집중감지 대상 현황 메일링 /* 운영서버에서는 모니터링 결과 메일링 후 자동 실행되므로 아래 Task 스케줄이 필요없음 */ -->
+        <!-- <task:scheduled ref="abnormalTaskService" method="startAbnormalTargetMail" cron="0 */10 9-17 * * MON,TUE,WED,THU,FRI"/> -->
+        
+        <!-- 2016.07.13, 변경된 종료메일 발송 -->
+        <!-- <task:scheduled ref="mailBatchTaskService" method="endThreePrjNotice" cron="0 */10 8-17 * * MON,TUE,WED,THU,FRI"/> -->
+        <!-- <task:scheduled ref="taskService" method="modifyTransInfo" cron="${portal.task.trans}"/> -->
+    </task:scheduled-tasks>
+
+</beans>
