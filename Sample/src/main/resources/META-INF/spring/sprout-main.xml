@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:aop="http://www.springframework.org/schema/aop"
+    xmlns:p="http://www.springframework.org/schema/p"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:mvc="http://www.springframework.org/schema/mvc"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/aop
+        http://www.springframework.org/schema/aop/spring-aop.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/mvc
+        http://www.springframework.org/schema/mvc/spring-mvc.xsd">
+        
+        
+   	<import resource="classpath:/META-INF/spring/core/sprout-aop.xml"/>
+	<import resource="classpath:/META-INF/spring/core/sprout-management.xml"/>
+
+    <bean id="jsonView" class="org.springframework.web.servlet.view.json.MappingJackson2JsonView" />
+    <bean id="downloadView" class="com.skhynix.hydesign.portal.common.view.DownloadView" />
+    <bean id="imageView" class="com.skhynix.hydesign.portal.common.view.ImageView" />
+    <bean id="textView" class="com.skhynix.hydesign.portal.common.view.StringView" />
+    <!--    <bean id="excelView" class="com.skhynix.hydesign.portal.common.view.ExcelView" /> -->
+
+	<bean class="com.skhynix.hydesign.portal.common.resolver.ExcelViewResolver" p:order="1"
+       p:prefix="/WEB-INF/excel/"
+       p:viewClass="com.skhynix.hydesign.portal.common.view.ExcelView">
+	</bean>
+
+    <bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping">
+        <property name="alwaysUseFullPath" value="true" />
+    </bean>
+
+    <bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter">
+        <property name="synchronizeOnSession" value="true" />
+        <property name="customArgumentResolvers">
+            <list>
+                <bean class="com.skhynix.hydesign.portal.common.resolver.ParameterMappingResolver" />
+                <bean class="com.skhynix.hydesign.portal.common.resolver.ParameterFileMappingResolver" />
+                <!-- bean class="com.skhynix.hydesign.portal.common.resolver.ExcelViewResolver" /-->
+            </list>
+        </property>
+    </bean>
+
+    <bean class="org.springframework.web.servlet.view.BeanNameViewResolver">
+        <property name="order" value="0" />
+    </bean>
+
+    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="order" value="1" />
+        <property name="prefix" value="/WEB-INF/jsp/" />
+        <property name="suffix" value=".jsp" />
+    </bean>
+
+    <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+        <property name="defaultEncoding" value="UTF-8" />
+        <property name="maxUploadSize" value="10737418240" />
+        <!-- <property name="maxInMemorySize" value="1024" /> -->
+    </bean>
+
+    <!-- locale -->
+    <bean id="localeResolver" class="org.springframework.web.servlet.i18n.SessionLocaleResolver" >
+        <property name="defaultLocale" value="ko_KR" />
+    </bean>
+
+    <context:component-scan base-package="com.skhynix.hydesign.portal">
+        <context:include-filter type="annotation" expression="org.springframework.stereotype.Controller" />
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Service" />
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Repository" />
+    </context:component-scan>
+
+    <mvc:interceptors>
+        <mvc:interceptor>
+            <mvc:mapping path="/**" />            
+            <mvc:exclude-mapping path="/styles/**" />
+            <mvc:exclude-mapping path="/xfe/**" />
+            <mvc:exclude-mapping path="/favicon.ico" />
+            <bean id="localeChangeInterceptor" class="org.springframework.web.servlet.i18n.LocaleChangeInterceptor">
+                <property name="paramName" value="lang" />
+            </bean>
+        </mvc:interceptor>
+        <mvc:interceptor>
+            <mvc:mapping path="/**" />            
+            <mvc:exclude-mapping path="/styles/**" />
+            <mvc:exclude-mapping path="/xfe/**" />
+            <mvc:exclude-mapping path="/community/**/viewImage" />
+            <mvc:exclude-mapping path="/tools/**/viewImage" />
+            <mvc:exclude-mapping path="/community/bbsImage" />
+            <mvc:exclude-mapping path="/admin/community/bbsImage" />
+            <mvc:exclude-mapping path="/information/**/viewImage" />
+            <mvc:exclude-mapping path="/favicon.ico" />
+            <bean class="com.skhynix.hydesign.portal.common.interceptor.PortalInterceptor" />
+        </mvc:interceptor>
+        <mvc:interceptor>
+            <mvc:mapping path="/**" />            
+            <mvc:exclude-mapping path="/styles/**" />
+            <mvc:exclude-mapping path="/xfe/**" />
+            <mvc:exclude-mapping path="/favicon.ico" />
+            <mvc:exclude-mapping path="/aspera/**" />
+            <mvc:exclude-mapping path="/common/**" />
+            <mvc:exclude-mapping path="/my/**" />
+            <bean class="com.skhynix.hydesign.portal.common.interceptor.AdminlogInterceptor" />
+        </mvc:interceptor>
+        <mvc:interceptor>
+            <mvc:mapping path="/work/project/develop/devProjectList" />
+            <mvc:mapping path="/work/drawing/thDrawing/thDrawingList" />
+            <mvc:mapping path="/work/drawing/**" />
+            <mvc:mapping path="/work/overseas/drawing/overseasDrawingPageList" />
+            <mvc:mapping path="/work/group/develop/devGrpList" />
+            <mvc:mapping path="/work/group/**" />
+            <mvc:mapping path="/work/serverAccess/**" />
+            <mvc:exclude-mapping path="/styles/**" />
+            <mvc:exclude-mapping path="/xfe/**" />
+            <mvc:exclude-mapping path="/favicon.ico" />
+            <bean class="com.skhynix.hydesign.portal.common.interceptor.ScreenSecurityInterceptor" />
+        </mvc:interceptor>
+        <mvc:interceptor>
+            <mvc:mapping path="/work/**" />
+            <mvc:mapping path="/admin/server/**" />
+            <mvc:mapping path="/common/file*" />
+            <mvc:mapping path="/common/searchApprover*" />
+            <mvc:exclude-mapping path="/styles/**" />
+            <mvc:exclude-mapping path="/xfe/**" />
+            <mvc:exclude-mapping path="/favicon.ico" />
+            <bean class="com.skhynix.hydesign.portal.common.interceptor.ProjectAuthorCheckInterceptor" />
+        </mvc:interceptor>
+    </mvc:interceptors>
+
+    <bean id="throwingAspect" class="com.skhynix.hydesign.portal.common.aop.ThrowingAspect" />
+    <aop:config>
+        <aop:aspect ref="loggingAspect">
+            <aop:around pointcut="execution(* com.skhynix.hydesign.portal.biz..*Controller.*(..))" method="around" />
+        </aop:aspect>
+        <aop:aspect ref="throwingAspect">
+            <aop:after-throwing pointcut="execution(* com.skhynix.hydesign.portal.biz..*Controller.*(..))" method="afterThrowing" throwing="ex" />
+        </aop:aspect>
+    </aop:config>
+
+    <mvc:default-servlet-handler />
+
+</beans>
