@@ -1,0 +1,1033 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="status-abnormal-status">
+
+    <!-- 이상징후 감지현황 조회 -->
+    <select id="detectList" resultType="hashmap">
+		<if test="searchType =='01'">
+		   SELECT 
+				 ROWNUM AS RNUM
+				,NVL(TO_CHAR(CRITICAL),' ') AS CRITICAL
+				,NVL(TO_CHAR(WARNING),' ') AS WARNING
+				,NVL(TO_CHAR(INFORM),' ') AS INFORM
+				,ORG_CD
+				,ORG_NM
+				,DANGER_LEVEL
+			FROM (
+					SELECT 
+					     SUM(CRITICAL) AS CRITICAL 
+					    ,SUM(WARNING) AS WARNING
+					    ,SUM(INFORM) AS INFORM
+					  	,ORG_CD
+					    ,ORG_NM
+					    ,NVL(SUM(CRITICAL)*(SELECT COMMON_CODE_COMMENT FROM HYD_COMMON_CODE_INFO WHERE COMMON_GROUP_CODE ='2841' AND COMMON_CODE='01'),0)+
+					     NVL(SUM(WARNING)*(SELECT COMMON_CODE_COMMENT FROM HYD_COMMON_CODE_INFO WHERE COMMON_GROUP_CODE ='2841' AND COMMON_CODE='02'),0)+
+					     NVL(SUM(INFORM)*(SELECT COMMON_CODE_COMMENT FROM HYD_COMMON_CODE_INFO WHERE COMMON_GROUP_CODE ='2841' AND COMMON_CODE='03'),0) AS DANGER_LEVEL 
+					  FROM (
+					  		SELECT 
+							  	 A.INS_DTTM
+							    ,CASE WHEN B.SCENARIO_LEVEL_CD = '01' THEN 1 END AS CRITICAL
+							    ,CASE WHEN B.SCENARIO_LEVEL_CD = '02' THEN 1 END AS WARNING
+							    ,CASE WHEN B.SCENARIO_LEVEL_CD = '03' THEN 1 END AS INFORM
+							    ,C.ORG_CD
+							    ,C.ORG_NM 
+							  FROM 
+							     HYD_ABNORMAL_HIST A
+							    ,HYD_ABNORMAL_SCENARIO B
+							    ,HYD_V_EMP_INFO C
+							 WHERE
+							     A.HIST_SCENARIO_ID = B.SCENARIO_ID(+)
+							   AND    
+							     A.ABNORMAL_EMP_NO = C.EMP_NO(+)
+							   AND
+							     A.DATA_DEL_FG = 'N'
+							   AND
+							     B.DATA_DEL_FG = 'N'
+						<if test="searchText != null and searchText != '' and searchValue != ''">
+							AND C.ORG_CD IN (
+											 SELECT ORG_CD 
+											   FROM HYD_ORG_INFO 
+											  START WITH PAR_ORG_CD = #{searchValue} 
+											CONNECT BY PRIOR ORG_CD = PAR_ORG_CD 
+											  UNION 
+											 SELECT #{searchValue} AS ORG_CD 
+											   FROM DUAL
+											)
+            			</if>
+            			<if test="searchText != null and searchText != '' and searchValue == ''">
+							   AND C.ORG_NM LIKE '%'||#{searchText}||'%' 
+            			</if>
+					    <if test="searchStartDttm != null and searchStartDttm != ''">
+            				   AND TO_CHAR(A.INS_DTTM,'YYYY-MM-DD') <![CDATA[>=]]> #{searchStartDttm}
+			            </if>
+			            <if test="searchEndDttm != null and searchEndDttm != ''">
+			            	   AND TO_CHAR(A.INS_DTTM,'YYYY-MM-DD') <![CDATA[<=]]> #{searchEndDttm}
+			            </if>
+						   ) 
+				GROUP BY 
+			       	   ORG_CD
+				      ,ORG_NM 
+				ORDER BY 
+					   DANGER_LEVEL DESC
+				 )	
+			</if>
+			<if test="searchType =='02'">
+		   SELECT 
+				 ROWNUM AS RNUM
+				,NVL(TO_CHAR(CRITICAL),' ') AS CRITICAL
+				,NVL(TO_CHAR(WARNING),' ') AS WARNING
+				,NVL(TO_CHAR(INFORM),' ') AS INFORM
+				,ORG_CD
+				,ORG_NM
+				,DANGER_LEVEL
+			FROM (
+					SELECT 
+					     SUM(CRITICAL) AS CRITICAL 
+					    ,SUM(WARNING) AS WARNING
+					    ,SUM(INFORM) AS INFORM
+					  	,ORG_CD
+					    ,ORG_NM
+					    ,NVL(SUM(CRITICAL)*(SELECT COMMON_CODE_COMMENT FROM HYD_COMMON_CODE_INFO WHERE COMMON_GROUP_CODE ='2841' AND COMMON_CODE='01'),0)+
+					     NVL(SUM(WARNING)*(SELECT COMMON_CODE_COMMENT FROM HYD_COMMON_CODE_INFO WHERE COMMON_GROUP_CODE ='2841' AND COMMON_CODE='02'),0)+
+					     NVL(SUM(INFORM)*(SELECT COMMON_CODE_COMMENT FROM HYD_COMMON_CODE_INFO WHERE COMMON_GROUP_CODE ='2841' AND COMMON_CODE='03'),0) AS DANGER_LEVEL 
+					  FROM (
+					  		SELECT 
+							  	 A.INS_DTTM
+							    ,CASE WHEN B.SCENARIO_LEVEL_CD = '01' THEN 1 END AS CRITICAL
+							    ,CASE WHEN B.SCENARIO_LEVEL_CD = '02' THEN 1 END AS WARNING
+							    ,CASE WHEN B.SCENARIO_LEVEL_CD = '03' THEN 1 END AS INFORM
+							  	,D.PRJID AS ORG_CD
+							    ,D.PRJNAME AS ORG_NM
+							  FROM 
+							     HYD_ABNORMAL_HIST A
+							    ,HYD_ABNORMAL_SCENARIO B
+							    ,VWS_PRJ D
+							    ,VWS_PRJ_MEMBERS E
+							 WHERE
+							  	 D.PRJID = E.PRJID
+							   AND
+							   	 E.MEMBER_ID = A.ABNORMAL_EMP_NO
+							   AND
+							     A.HIST_SCENARIO_ID = B.SCENARIO_ID(+)
+							   AND
+							     A.DATA_DEL_FG = 'N'
+							   AND
+							     B.DATA_DEL_FG = 'N'
+						<if test="searchText != null and searchText != '' and searchValue != ''">
+							   AND D.PRJID = #{searchValue}
+            			</if>
+            			<if test="searchText != null and searchText != '' and searchValue == ''">
+							   AND D.PRJNAME LIKE '%'||#{searchText}||'%' 
+            			</if>
+					    <if test="searchStartDttm != null and searchStartDttm != ''">
+            				   AND TO_CHAR(A.INS_DTTM,'YYYY-MM-DD') <![CDATA[>=]]> #{searchStartDttm}
+			            </if>
+			            <if test="searchEndDttm != null and searchEndDttm != ''">
+			            	   AND TO_CHAR(A.INS_DTTM,'YYYY-MM-DD') <![CDATA[<=]]> #{searchEndDttm}
+			            </if>
+						   ) 
+				GROUP BY 
+			       	   ORG_CD
+				      ,ORG_NM 
+				ORDER BY 
+					   DANGER_LEVEL DESC
+				 )	
+			</if>
+				 
+    </select>
+    
+    <!--  이상징후 감지사용자 top10 -->
+    <select id="detectTopTenList" resultType="hashmap">
+							
+				SELECT 
+				 ROWNUM AS RNUM
+				,NVL(TO_CHAR(CRITICAL),' ') AS CRITICAL
+				,NVL(TO_CHAR(WARNING),' ') AS WARNING
+				,NVL(TO_CHAR(INFORM),' ') AS INFORM
+				,EMP_NO
+				,EMP_NM
+				,ORG_CD
+				,ORG_NM
+				,JTIT_NM
+				,DANGER_LEVEL
+			 FROM (
+					SELECT 
+					     SUM(CRITICAL) AS CRITICAL 
+					    ,SUM(WARNING) AS WARNING
+					    ,SUM(INFORM) AS INFORM
+					    ,EMP_NO
+					    ,EMP_NM
+					    ,ORG_CD
+					    ,ORG_NM 
+					    ,JTIT_NM
+					    ,NVL(SUM(CRITICAL)*(SELECT COMMON_CODE_COMMENT FROM HYD_COMMON_CODE_INFO WHERE COMMON_GROUP_CODE ='2841' AND COMMON_CODE='01'),0)+
+					     NVL(SUM(WARNING)*(SELECT COMMON_CODE_COMMENT FROM HYD_COMMON_CODE_INFO WHERE COMMON_GROUP_CODE ='2841' AND COMMON_CODE='02'),0)+
+					     NVL(SUM(INFORM)*(SELECT COMMON_CODE_COMMENT FROM HYD_COMMON_CODE_INFO WHERE COMMON_GROUP_CODE ='2841' AND COMMON_CODE='03'),0) AS DANGER_LEVEL
+					  FROM (
+							  SELECT 
+								   A.INS_DTTM
+								  ,CASE WHEN B.SCENARIO_LEVEL_CD = '01' THEN 1 END AS CRITICAL
+								  ,CASE WHEN B.SCENARIO_LEVEL_CD = '02' THEN 1 END AS WARNING
+								  ,CASE WHEN B.SCENARIO_LEVEL_CD = '03' THEN 1 END AS INFORM
+								  ,C.EMP_NO
+								  ,C.EMP_NM
+								  ,C.ORG_CD
+								  ,C.ORG_NM 
+								  ,C.JTIT_NM 
+							    FROM 
+							       HYD_ABNORMAL_HIST A
+								  ,HYD_ABNORMAL_SCENARIO B
+								  ,HYD_V_EMP_INFO C
+							   WHERE
+								   A.HIST_SCENARIO_ID = B.SCENARIO_ID(+)
+								 AND    
+								   A.ABNORMAL_EMP_NO = C.EMP_NO(+)
+								 AND
+								   A.DATA_DEL_FG = 'N'
+								 AND
+								   B.DATA_DEL_FG = 'N'
+								<if test="searchText != null and searchText != '' and searchValue != '' and searchType =='01'">
+									AND C.ORG_CD IN (
+													 SELECT ORG_CD 
+													   FROM HYD_ORG_INFO 
+													  START WITH PAR_ORG_CD = #{searchValue} 
+													CONNECT BY PRIOR ORG_CD = PAR_ORG_CD 
+													  UNION 
+													 SELECT #{searchValue} AS ORG_CD 
+													   FROM DUAL
+													)
+		            			</if>
+		            			<if test="searchText != null and searchText != '' and searchValue == '' and searchType =='01'">
+							 	 AND C.ORG_NM LIKE '%'||#{searchText}||'%' 
+		            			</if>
+		            			<if test="searchText != null and searchText != '' and searchValue != '' and searchType =='02'">
+		            			 AND A.ABNORMAL_EMP_NO IN (SELECT MEMBER_ID FROM VWS_PRJ_MEMBERS WHERE PRJID = #{searchValue})
+		            			</if>
+		            			<if test="searchText != null and searchText != '' and searchValue == '' and searchType =='02'">
+		            			 AND A.ABNORMAL_EMP_NO IN (SELECT MEMBER_ID FROM VWS_PRJ_MEMBERS A, VWS_PRJ B WHERE A.PRJID=B.PRJID AND B.PRJNAME LIKE '%'||#{searchText}||'%') 
+		            			</if>
+							    <if test="searchStartDttm != null and searchStartDttm != ''">
+		            			 AND TO_CHAR(A.INS_DTTM,'YYYY-MM-DD') <![CDATA[>=]]> #{searchStartDttm}
+					            </if>
+					            <if test="searchEndDttm != null and searchEndDttm != ''">
+					             AND TO_CHAR(A.INS_DTTM,'YYYY-MM-DD') <![CDATA[<=]]> #{searchEndDttm}
+					            </if>
+						    
+							) 
+				GROUP BY 
+				     	EMP_NO
+					   ,EMP_NM
+					   ,ORG_CD
+					   ,ORG_NM 
+					   ,JTIT_NM
+				ORDER BY 
+						DANGER_LEVEL DESC
+				 )	
+		   WHERE 
+		       ROWNUM BETWEEN 1 AND 10
+    </select>
+    
+    <!--  부서별 디테일 -->
+    <select id="detectDetailList" resultType="hashmap">
+		 <if test="searchType =='01'">
+			 SELECT  
+                  ROWNUM AS RNUM
+                 ,TOT_CNT
+                 ,HIST_COMMENT
+                 ,INS_DTTM
+				 ,SCENARIO_LEVEL
+                 ,SCENARIO_NM
+                 ,EMP_NO
+				 ,EMP_NM
+				 ,ORG_CD
+				 ,ORG_NM
+				 ,JTIT_NM 
+                 ,TOT_CNT*DECODE(SCENARIO_LEVEL,'Critical',(SELECT COMMON_CODE_COMMENT FROM HYD_COMMON_CODE_INFO WHERE COMMON_GROUP_CODE ='2841' AND COMMON_CODE='01'),'Warning',(SELECT COMMON_CODE_COMMENT FROM HYD_COMMON_CODE_INFO WHERE COMMON_GROUP_CODE ='2841' AND COMMON_CODE='02'),'Inform',(SELECT COMMON_CODE_COMMENT FROM HYD_COMMON_CODE_INFO WHERE COMMON_GROUP_CODE ='2841' AND COMMON_CODE='03')) AS DANGER_LEVEL
+			  FROM (		
+                       SELECT 
+                            COUNT(A.HIST_SCENARIO_ID) OVER() AS TOT_CNT
+                           ,A.HIST_COMMENT
+                           ,TO_CHAR(A.INS_DTTM,'YYYY-MM-DD HH24:MI:SS') AS INS_DTTM
+                           ,FN_GET_CODE_NAME('2841', B.SCENARIO_LEVEL_CD) AS SCENARIO_LEVEL
+                           ,B.SCENARIO_NM
+                           ,C.EMP_NO
+						   ,C.EMP_NM
+						   ,C.ORG_CD
+						   ,C.ORG_NM
+						   ,C.JTIT_NM 
+						 FROM 
+						    HYD_ABNORMAL_HIST A
+						   ,HYD_ABNORMAL_SCENARIO B
+						   ,HYD_V_EMP_INFO C
+						WHERE 
+						    A.HIST_SCENARIO_ID = B.SCENARIO_ID(+)
+						  AND    
+						    A.ABNORMAL_EMP_NO = C.EMP_NO(+)
+						  AND
+						    A.DATA_DEL_FG = 'N'
+						  AND
+						    B.DATA_DEL_FG = 'N'
+                         <if test="orgCd != null and orgCd != ''">
+							AND C.ORG_CD IN (
+											 SELECT ORG_CD 
+											   FROM HYD_ORG_INFO 
+											  START WITH PAR_ORG_CD = #{orgCd} 
+											CONNECT BY PRIOR ORG_CD = PAR_ORG_CD 
+											  UNION 
+											 SELECT #{orgCd} AS ORG_CD 
+											   FROM DUAL
+											)
+	                     </if>
+                         <if test="empNo != null and empNo != ''">
+                         	AND C.EMP_NO = #{empNo}
+                         </if>
+                          AND
+                            B.SCENARIO_LEVEL_CD = #{value}
+                          AND 
+                         	TO_CHAR(A.INS_DTTM,'YYYY-MM-DD') <![CDATA[>=]]> #{searchStartDttm}
+                          AND 
+                         	TO_CHAR(A.INS_DTTM,'YYYY-MM-DD') <![CDATA[<=]]> #{searchEndDttm}
+                           
+                     ORDER BY 
+                         	A.INS_DTTM DESC
+                   )
+				</if>
+				
+		 <if test="searchType =='02'">
+		  SELECT  
+                  ROWNUM AS RNUM
+                 ,TOT_CNT
+                 ,HIST_COMMENT
+                 ,INS_DTTM
+				 ,SCENARIO_LEVEL
+                 ,SCENARIO_NM
+                 ,EMP_NO
+				 ,EMP_NM
+				 ,ORG_CD
+				 ,ORG_NM
+				 ,JTIT_NM 
+                 ,TOT_CNT*DECODE(SCENARIO_LEVEL,'Critical',(SELECT COMMON_CODE_COMMENT FROM HYD_COMMON_CODE_INFO WHERE COMMON_GROUP_CODE ='2841' AND COMMON_CODE='01'),'Warning',(SELECT COMMON_CODE_COMMENT FROM HYD_COMMON_CODE_INFO WHERE COMMON_GROUP_CODE ='2841' AND COMMON_CODE='02'),'Inform',(SELECT COMMON_CODE_COMMENT FROM HYD_COMMON_CODE_INFO WHERE COMMON_GROUP_CODE ='2841' AND COMMON_CODE='03')) AS DANGER_LEVEL
+			  FROM (		
+                       SELECT 
+                            COUNT(A.HIST_SCENARIO_ID) OVER() AS TOT_CNT
+                           ,A.HIST_COMMENT
+                           ,TO_CHAR(A.INS_DTTM,'YYYY-MM-DD HH24:MI:SS') AS INS_DTTM
+                           ,FN_GET_CODE_NAME('2841', B.SCENARIO_LEVEL_CD) AS SCENARIO_LEVEL
+                           ,B.SCENARIO_NM
+                           ,C.EMP_NO
+						   ,C.EMP_NM
+						 <if test="orgCd != null and orgCd != ''">
+						   ,D.PRJID AS ORG_CD
+						   ,D.PRJNAME AS ORG_NM
+						 </if>
+					     <if test="empNo != null and empNo != ''">
+						   ,C.ORG_CD
+						   ,C.ORG_NM
+					     </if>
+						   ,C.JTIT_NM 
+						 FROM 
+						    HYD_ABNORMAL_HIST A
+						   ,HYD_ABNORMAL_SCENARIO B
+						   ,HYD_V_EMP_INFO C
+				          <if test="orgCd != null and orgCd != ''">
+					       ,VWS_PRJ D
+                           ,VWS_PRJ_MEMBERS E
+                          </if>
+						WHERE 
+						  <if test="orgCd != null and orgCd != ''">  
+							E.MEMBER_ID = A.ABNORMAL_EMP_NO
+                          AND
+                            D.PRJID = E.PRJID
+                          AND
+                          </if>
+						    A.HIST_SCENARIO_ID = B.SCENARIO_ID
+						  AND    
+						    A.ABNORMAL_EMP_NO = C.EMP_NO
+						  AND
+						    A.DATA_DEL_FG = 'N'
+						  AND
+						    B.DATA_DEL_FG = 'N'
+                          AND
+                         <if test="orgCd != null and orgCd != ''">
+                            D.PRJID = #{orgCd}
+	                     </if>
+                         <if test="empNo != null and empNo != ''">
+                            C.EMP_NO = #{empNo}
+                         </if>
+                          AND
+                            B.SCENARIO_LEVEL_CD = #{value}
+                          AND 
+                         	TO_CHAR(A.INS_DTTM,'YYYY-MM-DD') <![CDATA[>=]]> #{searchStartDttm}
+                          AND 
+                         	TO_CHAR(A.INS_DTTM,'YYYY-MM-DD') <![CDATA[<=]]> #{searchEndDttm}
+                           
+                     ORDER BY 
+                         	A.INS_DTTM DESC
+                   )
+		 	</if>
+    </select>
+    
+    <!--  고위험 시나리오 감지이력(대시보드) -->
+    <select id="highRiskDetectList" resultType="hashmap">
+			 <if test="searchType =='01'">
+				 SELECT  
+                        ROWNUM AS RNUM
+                       ,TOT_CNT
+                       ,HIST_COMMENT
+                       ,INS_DTTM
+					   ,SCENARIO_LEVEL
+                       ,SCENARIO_NM
+                       ,EMP_NO
+					   ,EMP_NM
+					   ,ORG_CD
+					   ,ORG_NM
+					   ,JTIT_NM 
+                       ,TOT_CNT*DECODE(SCENARIO_LEVEL,'Critical',(SELECT COMMON_CODE_COMMENT FROM HYD_COMMON_CODE_INFO WHERE COMMON_GROUP_CODE ='2841' AND COMMON_CODE='01'),'Warning',(SELECT COMMON_CODE_COMMENT FROM HYD_COMMON_CODE_INFO WHERE COMMON_GROUP_CODE ='2841' AND COMMON_CODE='02'),'Inform',(SELECT COMMON_CODE_COMMENT FROM HYD_COMMON_CODE_INFO WHERE COMMON_GROUP_CODE ='2841' AND COMMON_CODE='03')) AS DANGER_LEVEL
+				 FROM 
+					 (		
+                       SELECT 
+                            COUNT(A.HIST_SCENARIO_ID) OVER() AS TOT_CNT
+                           ,A.HIST_COMMENT
+                           ,TO_CHAR(A.INS_DTTM,'YYYY-MM-DD HH24:MI:SS') AS INS_DTTM
+						   ,FN_GET_CODE_NAME('2841', B.SCENARIO_LEVEL_CD) AS SCENARIO_LEVEL
+                           ,B.SCENARIO_NM
+                           ,C.EMP_NO
+						   ,C.EMP_NM
+						   ,C.ORG_CD
+						   ,C.ORG_NM
+						   ,C.JTIT_NM 
+						 FROM 
+						    HYD_ABNORMAL_HIST A,
+						    HYD_ABNORMAL_SCENARIO B,
+						    HYD_V_EMP_INFO C
+						 WHERE
+						    A.HIST_SCENARIO_ID = B.SCENARIO_ID(+)
+						 AND    
+						    A.ABNORMAL_EMP_NO = C.EMP_NO(+)
+						 AND
+						    A.DATA_DEL_FG = 'N'
+						 AND
+						    B.DATA_DEL_FG = 'N'
+                         AND
+                            B.SCENARIO_LEVEL_CD = '01'
+                        <if test="searchText != null and searchText != '' and searchValue != ''">
+							AND C.ORG_CD IN (
+											 SELECT ORG_CD 
+											   FROM HYD_ORG_INFO 
+											  START WITH PAR_ORG_CD = #{searchValue}
+											CONNECT BY PRIOR ORG_CD = PAR_ORG_CD 
+											  UNION 
+											 SELECT #{searchValue} AS ORG_CD 
+											   FROM DUAL
+											)
+                        </if>
+                        <if test="searchText != null and searchText != '' and searchValue == ''">
+							AND C.ORG_NM LIKE '%'||#{searchText}||'%' 
+            			</if>
+                         AND 
+                         	TO_CHAR(A.INS_DTTM,'YYYY-MM-DD') <![CDATA[>=]]> #{searchStartDttm}
+                         AND 
+                         	TO_CHAR(A.INS_DTTM,'YYYY-MM-DD') <![CDATA[<=]]> #{searchEndDttm}
+                           
+                         ORDER BY 
+                         	A.INS_DTTM DESC
+                       )  WHERE ROWNUM <![CDATA[<=]]> 10 
+			</if>	
+			<if test="searchType =='02'">
+				 SELECT  
+                        ROWNUM AS RNUM
+                       ,TOT_CNT
+                       ,HIST_COMMENT
+                       ,INS_DTTM
+					   ,SCENARIO_LEVEL
+                       ,SCENARIO_NM
+                       ,EMP_NO
+					   ,EMP_NM
+					   ,ORG_CD
+					   ,ORG_NM
+					   ,JTIT_NM 
+                       ,TOT_CNT*DECODE(SCENARIO_LEVEL,'Critical',(SELECT COMMON_CODE_COMMENT FROM HYD_COMMON_CODE_INFO WHERE COMMON_GROUP_CODE ='2841' AND COMMON_CODE='01'),'Warning',(SELECT COMMON_CODE_COMMENT FROM HYD_COMMON_CODE_INFO WHERE COMMON_GROUP_CODE ='2841' AND COMMON_CODE='02'),'Inform',(SELECT COMMON_CODE_COMMENT FROM HYD_COMMON_CODE_INFO WHERE COMMON_GROUP_CODE ='2841' AND COMMON_CODE='03')) AS DANGER_LEVEL
+				 FROM 
+					 (		
+                       SELECT 
+                            COUNT(A.HIST_SCENARIO_ID) OVER() AS TOT_CNT
+                           ,A.HIST_COMMENT
+                           ,TO_CHAR(A.INS_DTTM,'YYYY-MM-DD HH24:MI:SS') AS INS_DTTM
+						   ,FN_GET_CODE_NAME('2841', B.SCENARIO_LEVEL_CD) AS SCENARIO_LEVEL
+                           ,B.SCENARIO_NM
+                           ,C.EMP_NO
+						   ,C.EMP_NM
+						   ,D.PRJID AS ORG_CD
+						   ,D.PRJNAME AS ORG_NM
+						   ,C.JTIT_NM 
+						 FROM 
+						    HYD_ABNORMAL_HIST A,
+						    HYD_ABNORMAL_SCENARIO B,
+						    HYD_V_EMP_INFO C,
+						    VWS_PRJ D,
+                            VWS_PRJ_MEMBERS E
+						 WHERE
+						  	E.MEMBER_ID = A.ABNORMAL_EMP_NO
+                         AND
+                            D.PRJID = E.PRJID
+                         AND
+						    A.HIST_SCENARIO_ID = B.SCENARIO_ID
+						 AND    
+						    A.ABNORMAL_EMP_NO = C.EMP_NO
+						 AND
+						    A.DATA_DEL_FG = 'N'
+						 AND
+						    B.DATA_DEL_FG = 'N'
+                         AND
+                            B.SCENARIO_LEVEL_CD = '01'
+                        <if test="searchText != null and searchText != '' and searchValue != ''">
+                         	AND D.PRJID = #{searchValue}
+                        </if>
+                        <if test="searchText != null and searchText != '' and searchValue == ''">
+							AND D.PRJNAME LIKE '%'||#{searchText}||'%' 
+            			</if>
+                         AND 
+                         	TO_CHAR(A.INS_DTTM,'YYYY-MM-DD') <![CDATA[>=]]> #{searchStartDttm}
+                         AND 
+                         	TO_CHAR(A.INS_DTTM,'YYYY-MM-DD') <![CDATA[<=]]> #{searchEndDttm}
+                           
+                         ORDER BY 
+                         	A.INS_DTTM DESC
+                       )  WHERE ROWNUM <![CDATA[<=]]> 10 
+			</if>
+    </select>
+    
+     <!--  위험 시나리오 발생현황(대시보드) -->
+    <select id="riskScenarioOccur" resultType="hashmap">
+		<if test="searchType =='01'">
+			SELECT 
+				 NVL(TO_CHAR(CRITICAL),' ') AS CRITICAL
+				,NVL(TO_CHAR(WARNING),' ') AS WARNING
+				,NVL(TO_CHAR(INFORM),' ') AS INFORM
+                ,SCENARIO_ID
+                ,SCENARIO_NM
+				,ORG_CD
+				,ORG_NM
+			  FROM (
+					SELECT 
+					     SUM(CRITICAL) AS CRITICAL 
+					    ,SUM(WARNING) AS WARNING
+					    ,SUM(INFORM) AS INFORM
+                        ,SCENARIO_ID
+                        ,SCENARIO_NM
+					  	,ORG_CD
+					    ,ORG_NM
+					  FROM (
+					  		SELECT 
+							  	 A.INS_DTTM
+							    ,CASE WHEN B.SCENARIO_LEVEL_CD = '01' THEN 1 END AS CRITICAL
+							    ,CASE WHEN B.SCENARIO_LEVEL_CD = '02' THEN 1 END AS WARNING
+							    ,CASE WHEN B.SCENARIO_LEVEL_CD = '03' THEN 1 END AS INFORM
+	                            ,B.SCENARIO_ID
+	                            ,B.SCENARIO_NM
+							    ,C.ORG_CD
+							    ,C.ORG_NM 
+							  FROM 
+							     HYD_ABNORMAL_HIST A
+							    ,HYD_ABNORMAL_SCENARIO B
+							    ,HYD_V_EMP_INFO C
+							 WHERE
+							     A.HIST_SCENARIO_ID = B.SCENARIO_ID
+							   AND    
+							     A.ABNORMAL_EMP_NO = C.EMP_NO
+							   AND
+							     A.DATA_DEL_FG = 'N'
+							   AND
+							     B.DATA_DEL_FG = 'N'
+							<if test="searchText != null and searchText != '' and searchValue != ''">
+							   AND C.ORG_CD IN (
+												 SELECT ORG_CD 
+												   FROM HYD_ORG_INFO 
+												  START WITH PAR_ORG_CD = #{searchValue}
+												CONNECT BY PRIOR ORG_CD = PAR_ORG_CD 
+												  UNION 
+												 SELECT #{searchValue} AS ORG_CD 
+												   FROM DUAL
+												)
+	            			</if>
+	            			<if test="searchText != null and searchText != '' and searchValue == ''">
+							   AND C.ORG_NM LIKE '%'||#{searchText}||'%' 
+	            			</if>
+						    <if test="searchStartDttm != null and searchStartDttm != ''">
+	            			   AND TO_CHAR(A.INS_DTTM,'YYYY-MM-DD') <![CDATA[>=]]> #{searchStartDttm}
+				            </if>
+				            <if test="searchEndDttm != null and searchEndDttm != ''">
+				               AND TO_CHAR(A.INS_DTTM,'YYYY-MM-DD') <![CDATA[<=]]> #{searchEndDttm}
+				            </if> 
+				        	) 
+				   GROUP BY 
+				    	   ORG_CD
+					      ,ORG_NM 
+                          ,SCENARIO_ID
+                          ,SCENARIO_NM
+				)	
+			  ORDER BY 
+			  		 CRITICAL DESC, 
+			  		 WARNING DESC, 
+			  		 INFORM DESC
+			</if>
+			<if test="searchType =='02'">
+			SELECT 
+				 NVL(TO_CHAR(CRITICAL),' ') AS CRITICAL
+				,NVL(TO_CHAR(WARNING),' ') AS WARNING
+				,NVL(TO_CHAR(INFORM),' ') AS INFORM
+                ,SCENARIO_ID
+                ,SCENARIO_NM
+				,ORG_CD
+				,ORG_NM
+			  FROM (
+					SELECT 
+					     SUM(CRITICAL) AS CRITICAL 
+					    ,SUM(WARNING) AS WARNING
+					    ,SUM(INFORM) AS INFORM
+                        ,SCENARIO_ID
+                        ,SCENARIO_NM
+					  	,ORG_CD
+					    ,ORG_NM
+					  FROM (
+					  		SELECT 
+							  	 A.INS_DTTM
+							    ,CASE WHEN B.SCENARIO_LEVEL_CD = '01' THEN 1 END AS CRITICAL
+							    ,CASE WHEN B.SCENARIO_LEVEL_CD = '02' THEN 1 END AS WARNING
+							    ,CASE WHEN B.SCENARIO_LEVEL_CD = '03' THEN 1 END AS INFORM
+	                            ,B.SCENARIO_ID
+	                            ,B.SCENARIO_NM
+							    ,D.PRJID AS ORG_CD
+								,D.PRJNAME AS ORG_NM
+							  FROM 
+							     HYD_ABNORMAL_HIST A
+							    ,HYD_ABNORMAL_SCENARIO B
+							    ,HYD_V_EMP_INFO C
+							    ,VWS_PRJ D
+								,VWS_PRJ_MEMBERS E		
+							 WHERE
+				 			  	 E.MEMBER_ID = A.ABNORMAL_EMP_NO
+                        	   AND
+	                             D.PRJID = E.PRJID
+	                           AND
+							     A.HIST_SCENARIO_ID = B.SCENARIO_ID
+							   AND    
+							     A.ABNORMAL_EMP_NO = C.EMP_NO
+							   AND
+							     A.DATA_DEL_FG = 'N'
+							   AND
+							     B.DATA_DEL_FG = 'N'
+							<if test="searchText != null and searchText != '' and searchValue != ''">
+							   AND D.PRJID = #{searchValue}
+	            			</if>
+	            			<if test="searchText != null and searchText != '' and searchValue == ''">
+							   AND D.PRJNAME LIKE '%'||#{searchText}||'%' 
+	            			</if>
+						    <if test="searchStartDttm != null and searchStartDttm != ''">
+	            			   AND TO_CHAR(A.INS_DTTM,'YYYY-MM-DD') <![CDATA[>=]]> #{searchStartDttm}
+				            </if>
+				            <if test="searchEndDttm != null and searchEndDttm != ''">
+				               AND TO_CHAR(A.INS_DTTM,'YYYY-MM-DD') <![CDATA[<=]]> #{searchEndDttm}
+				            </if> 
+				        	) 
+				   GROUP BY 
+				    	   ORG_CD
+					      ,ORG_NM 
+                          ,SCENARIO_ID
+                          ,SCENARIO_NM
+				)	
+			  ORDER BY 
+			  		 CRITICAL DESC, 
+			  		 WARNING DESC, 
+			  		 INFORM DESC
+			</if>
+				
+    </select>
+    
+     <!-- 이상징후 발생 추이(그래프)-->
+    <select id="searchAbnormalListGrape" resultType="hashmap">  
+
+    <if test="searchType =='01'">
+				SELECT 
+			<!-- 	<if test="selMmDdType != null and selMmDdType != '' and selMmDdType == 'MM'">
+					 TO_CHAR(A.INS_DTTM, 'YYYY-MM') AS DEF_DATE
+			    </if> -->
+		        <if test="selMmDdType != null and selMmDdType != '' and selMmDdType == 'DD'">
+		       		 TO_CHAR(A.INS_DTTM, 'YYYY-MM-DD') AS DEF_DATE
+		        </if>	 
+					,C.ORG_CD
+					,NVL(SUM(CASE WHEN B.SCENARIO_LEVEL_CD = '01' THEN 1 END),'0') AS CRITICAL  
+					,NVL(SUM(CASE WHEN B.SCENARIO_LEVEL_CD = '02' THEN 1 END),'0') AS WARNING 
+					,NVL(SUM(CASE WHEN B.SCENARIO_LEVEL_CD = '03' THEN 1 END),'0') AS INFORM
+				 	,NVL(SUM(CASE WHEN B.SCENARIO_LEVEL_CD = '01' THEN 1 END),'0')+ 
+                     NVL(SUM(CASE WHEN B.SCENARIO_LEVEL_CD = '02' THEN 1 END),'0')+ 
+                     NVL(SUM(CASE WHEN B.SCENARIO_LEVEL_CD = '03' THEN 1 END),'0') AS TOTAL_CNT
+				FROM HYD_ABNORMAL_HIST A
+					, HYD_ABNORMAL_SCENARIO B
+					, HYD_V_EMP_INFO C 
+				WHERE A.HIST_SCENARIO_ID = B.SCENARIO_ID(+) 
+				  AND A.ABNORMAL_EMP_NO = C.EMP_NO(+) 
+				  AND A.DATA_DEL_FG = 'N' 
+				  AND B.DATA_DEL_FG = 'N' 
+                 <if test="searchText != null and searchText != '' and searchValue != ''">
+				   AND C.ORG_CD IN (
+									 SELECT ORG_CD 
+									   FROM HYD_ORG_INFO 
+									  START WITH PAR_ORG_CD = #{searchValue}
+									CONNECT BY PRIOR ORG_CD = PAR_ORG_CD 
+									  UNION 
+									 SELECT #{searchValue} AS ORG_CD 
+									   FROM DUAL
+									)
+       		 	 </if>
+       		 	 <if test="searchText != null and searchText != '' and searchValue == ''">
+				  AND ORG_NM LIKE '%'||#{searchText}||'%' 
+			     </if>
+			     <if test="searchStartDttm != null and searchStartDttm != ''">
+          		  AND TO_CHAR(A.INS_DTTM, 'YYYY-MM-DD') <![CDATA[>=]]> #{searchStartDttm}
+	             </if>
+	             <if test="searchEndDttm != null and searchEndDttm != ''">
+	              AND TO_CHAR(A.INS_DTTM, 'YYYY-MM-DD') <![CDATA[<=]]> #{searchEndDttm}
+	             </if> 
+              
+           <!--      <if test="selMmDdType != null and selMmDdType != '' and selMmDdType == 'MM'"> 
+                GROUP BY TO_CHAR(A.INS_DTTM, 'YYYY-MM'),C.ORG_CD
+                ORDER BY TO_CHAR(A.INS_DTTM, 'YYYY-MM'),C.ORG_CD 
+                </if> -->
+                <if test="selMmDdType != null and selMmDdType != '' and selMmDdType == 'DD'"> 
+                GROUP BY TO_CHAR(A.INS_DTTM, 'YYYY-MM-DD'),C.ORG_CD
+                ORDER BY TO_CHAR(A.INS_DTTM, 'YYYY-MM-DD'),C.ORG_CD 
+                </if>
+        </if>
+        
+        <if test="searchType =='02'">
+        		SELECT 
+			<!-- 	<if test="selMmDdType != null and selMmDdType != '' and selMmDdType == 'MM'">
+					 TO_CHAR(A.INS_DTTM, 'YYYY-MM') AS DEF_DATE
+			    </if> -->
+		        <if test="selMmDdType != null and selMmDdType != '' and selMmDdType == 'DD'">
+		       		 TO_CHAR(A.INS_DTTM, 'YYYY-MM-DD') AS DEF_DATE
+		        </if>	 
+				    ,D.PRJID AS ORG_CD
+					,NVL(SUM(CASE WHEN B.SCENARIO_LEVEL_CD = '01' THEN 1 END),'0') AS CRITICAL  
+					,NVL(SUM(CASE WHEN B.SCENARIO_LEVEL_CD = '02' THEN 1 END),'0') AS WARNING 
+					,NVL(SUM(CASE WHEN B.SCENARIO_LEVEL_CD = '03' THEN 1 END),'0') AS INFORM
+				 	,NVL(SUM(CASE WHEN B.SCENARIO_LEVEL_CD = '01' THEN 1 END),'0')+ 
+                     NVL(SUM(CASE WHEN B.SCENARIO_LEVEL_CD = '02' THEN 1 END),'0')+ 
+                     NVL(SUM(CASE WHEN B.SCENARIO_LEVEL_CD = '03' THEN 1 END),'0') AS TOTAL_CNT
+				FROM HYD_ABNORMAL_HIST A
+					,HYD_ABNORMAL_SCENARIO B
+					,HYD_V_EMP_INFO C 
+				    ,VWS_PRJ D
+                    ,VWS_PRJ_MEMBERS E
+                    
+				WHERE E.MEMBER_ID = A.ABNORMAL_EMP_NO
+                  AND D.PRJID = E.PRJID
+                  AND A.HIST_SCENARIO_ID = B.SCENARIO_ID(+) 
+				  AND A.ABNORMAL_EMP_NO = C.EMP_NO(+) 
+				  AND A.DATA_DEL_FG = 'N' 
+				  AND B.DATA_DEL_FG = 'N' 
+                 <if test="searchText != null and searchText != '' and searchValue != ''">
+				  AND D.PRJID = #{searchValue}
+       		 	 </if>
+       		 	 <if test="searchText != null and searchText != '' and searchValue == ''">
+				  AND D.PRJNAME LIKE '%'||#{searchText}||'%' 
+			     </if>
+			     <if test="searchStartDttm != null and searchStartDttm != ''">
+          		  AND TO_CHAR(A.INS_DTTM, 'YYYY-MM-DD') <![CDATA[>=]]> #{searchStartDttm}
+	             </if>
+	             <if test="searchEndDttm != null and searchEndDttm != ''">
+	              AND TO_CHAR(A.INS_DTTM, 'YYYY-MM-DD') <![CDATA[<=]]> #{searchEndDttm}
+	             </if> 
+              
+           <!--      <if test="selMmDdType != null and selMmDdType != '' and selMmDdType == 'MM'"> 
+                GROUP BY TO_CHAR(A.INS_DTTM, 'YYYY-MM'),C.ORG_CD
+                ORDER BY TO_CHAR(A.INS_DTTM, 'YYYY-MM'),C.ORG_CD 
+                </if> -->
+                <if test="selMmDdType != null and selMmDdType != '' and selMmDdType == 'DD'"> 
+                GROUP BY TO_CHAR(A.INS_DTTM, 'YYYY-MM-DD'),D.PRJID
+                ORDER BY TO_CHAR(A.INS_DTTM, 'YYYY-MM-DD'),D.PRJID 
+                </if>
+        </if>
+    </select>
+    
+     <!-- 이상징후 발생 추이(그래프)-->
+    <select id="searchAbnormalPieGrape" resultType="hashmap">  
+    <if test="searchType =='01'">
+			  WITH STAB AS
+			    (
+			     SELECT NVL(B.SCENARIO_TYPE_CD,'TOT_SUM')
+			            AS SCENARIO_TYPE_CD
+			           ,COUNT(*) 
+			            AS CNT
+			       FROM HYD_ABNORMAL_HIST A
+			      INNER JOIN HYD_ABNORMAL_SCENARIO B
+			              ON A.DATA_DEL_FG = 'N'
+			             AND B.DATA_DEL_FG = 'N'
+			             AND A.HIST_SCENARIO_ID = B.SCENARIO_ID
+			             
+	            	 <if test="searchStartDttm != null and searchStartDttm != '' and searchEndDttm != null and searchEndDttm != ''">
+			             AND TO_CHAR(A.INS_DTTM,'YYYY-MM-DD') BETWEEN #{searchStartDttm}
+			                                                      AND #{searchEndDttm}
+			         </if>         
+	                     AND A.ABNORMAL_EMP_NO IN (
+                                    				SELECT EMP_NO
+				                                      FROM HYD_V_EMP_INFO
+				                                     WHERE 1=1
+			                                     <if test="searchText != null and searchText != '' and searchValue != ''">
+													   AND ORG_CD IN (
+																	   SELECT ORG_CD 
+																	     FROM HYD_ORG_INFO 
+																	    START WITH PAR_ORG_CD = #{searchValue}
+																	  CONNECT BY PRIOR ORG_CD = PAR_ORG_CD 
+																	    UNION 
+															  		   SELECT #{searchValue} AS ORG_CD 
+																	     FROM DUAL
+																	 )
+				                                 </if>
+                                    			  )                                      
+			                                                      
+			      GROUP BY ROLLUP (B.SCENARIO_TYPE_CD) 
+			    )
+			SELECT SCENARIO_TYPE_CD
+			      ,FN_GET_CODE_NAME('2883', SCENARIO_TYPE_CD)
+			       AS SCENARIO_TYPE_NM
+			      ,CNT AS TYPE_CNT 
+			      ,DECODE(SCENARIO_TYPE_CD,'TOT_SUM','100'
+			                                        ,ROUND((CNT/(SELECT CNT 
+			                                                       FROM STAB 
+			                                                      WHERE SCENARIO_TYPE_CD='TOT_SUM')
+			                                                    ) * 100
+			                                              )
+			             )
+			       AS TYPE_PER
+			  FROM STAB
+			 WHERE SCENARIO_TYPE_CD != 'TOT_SUM'
+	</if>
+	<if test="searchType =='02'">
+		 WITH STAB AS
+			    (
+			     SELECT NVL(B.SCENARIO_TYPE_CD,'TOT_SUM')
+			            AS SCENARIO_TYPE_CD
+			           ,COUNT(*) 
+			            AS CNT
+			       FROM HYD_ABNORMAL_HIST A,
+			       		HYD_ABNORMAL_SCENARIO B,
+			       		VWS_PRJ D,
+                        VWS_PRJ_MEMBERS E
+			           WHERE A.DATA_DEL_FG = 'N'
+			             AND B.DATA_DEL_FG = 'N'
+			             AND A.HIST_SCENARIO_ID = B.SCENARIO_ID
+			             AND E.MEMBER_ID = A.ABNORMAL_EMP_NO
+                         AND D.PRJID = E.PRJID
+			             
+	            	 <if test="searchStartDttm != null and searchStartDttm != '' and searchEndDttm != null and searchEndDttm != ''">
+			             AND TO_CHAR(A.INS_DTTM,'YYYY-MM-DD') BETWEEN #{searchStartDttm}
+			                                                      AND #{searchEndDttm}
+			         </if>         
+	                     AND A.ABNORMAL_EMP_NO IN (
+                                    				SELECT MEMBER_ID
+				                                      FROM VWS_PRJ_MEMBERS
+				                                     WHERE 1=1
+			                                     <if test="searchText != null and searchText != '' and searchValue != ''">
+				                                       AND PRJID = #{searchValue}
+				                                 </if>
+                                    			  )                                      
+			                                                      
+			      GROUP BY ROLLUP (B.SCENARIO_TYPE_CD) 
+			    )
+			SELECT SCENARIO_TYPE_CD
+			      ,FN_GET_CODE_NAME('2883', SCENARIO_TYPE_CD)
+			       AS SCENARIO_TYPE_NM
+			      ,CNT AS TYPE_CNT 
+			      ,DECODE(SCENARIO_TYPE_CD,'TOT_SUM','100'
+			                                        ,ROUND((CNT/(SELECT CNT 
+			                                                       FROM STAB 
+			                                                      WHERE SCENARIO_TYPE_CD='TOT_SUM')
+			                                                    ) * 100
+			                                              )
+			             )
+			       AS TYPE_PER
+			  FROM STAB
+			 WHERE SCENARIO_TYPE_CD != 'TOT_SUM'
+	</if>
+    </select>
+    
+     <!--메일에서 넘어왔을때 권한유무 확인-->
+    <select id="checkUserProjAuth" resultType="String">
+		
+		SELECT 
+		    CASE
+		        WHEN PRJID =#{prjid} THEN 'Y'
+		        ELSE 'N'
+		    END AS MAIL_AUTH
+		FROM
+		    VWS_PRJ_MEMBERS
+		WHERE 
+		    MEMBER_ID = #{sessEmpNo}
+		AND
+		    PRJID = #{prjid}
+		  
+		
+    </select>
+    
+     <!--메일에서 넘어왔을때 권한유무 확인-->
+    <select id="checkUserOrgAuth" resultType="String">
+		SELECT CASE WHEN ORG_CD IN (SELECT ORG_CD 
+		                              FROM HYD_ORG_INFO 
+		                             START WITH PAR_ORG_CD = #{prjid}
+		                           CONNECT BY PRIOR ORG_CD = PAR_ORG_CD 
+		                             UNION 
+		                            SELECT #{prjid} AS ORG_CD 
+		                              FROM DUAL) 
+		            THEN 'Y' 
+		            ELSE 'N' 
+		        END 
+		       AS AUTH_YN 
+		  FROM HYD_V_EMP_INFO 
+		 WHERE EMP_NO = #{sessEmpNo}
+	</select>
+	
+	   <!--메일에서 넘어왔을때 텍스트 확인-->
+    <select id="searchTextName" resultType="String">
+		<if test="part == 'ORG'">
+
+			SELECT ORG_NM FROM HYD_ORG_INFO WHERE ORG_CD = #{prjid}
+		
+		</if>
+
+		<if test="part == 'PRJ'">
+
+			SELECT PRJNAME FROM VWS_PRJ WHERE PRJID = #{prjid}
+		
+		</if>
+	</select>
+	
+	<!-- 대시보드 메일 아이디 -->
+    <select id="getMailId" resultType="String">
+		SELECT NVL(MAX(MAIL_ID),0)+1
+		       AS MAIL_ID
+		  FROM HYD_ABNORMAL_MAIL
+	</select>
+    
+    <!-- 대시보드 메일 발송 예약 -->
+    <insert id="insertDashMail"> 
+		INSERT INTO HYD_ABNORMAL_MAIL
+		      (
+		       MAIL_ID
+		      ,MAIL_SEQ
+		      ,MAIL_FROM_EMP_NO
+		      ,MAIL_TO_EMP_NO
+		      ,MAIL_SUBJECT
+		      ,CONTENT_PART
+		      ,PRJID
+		      ,START_DT
+		      ,END_DT
+		      ,MAIL_SEND_FG
+		      ,DATA_DEL_FG
+		      ,INS_EMP_NO
+		      ,INS_DTTM
+		      ,UPD_EMP_NO
+		      ,UPD_DTTM
+		      )
+		VALUES
+		      (
+		       #{mailId}
+		      ,#{mailSeq}
+		      ,#{mailFromEmpNo}
+		      ,#{mailToEmpNo}
+		      ,#{mailSubject}
+		      ,#{contentPart}
+		      ,#{prjid}
+		      ,#{startDt}
+		      ,#{endDt}
+		      ,'N'
+		      ,'N'
+		      ,#{sessEmpNo}
+		      ,SYSDATE
+		      ,#{sessEmpNo}
+		      ,SYSDATE      
+		      )
+    </insert>
+    
+    <!-- 대시보드 메일 발송 내역 조회 -->
+    <select id="selectDashMailTask" resultType="hashmap">
+		SELECT A.MAIL_ID
+		      ,A.MAIL_FROM_EMP_NO
+		      ,B.EMP_NM
+		      ,B.ORG_CD
+		      ,B.ORG_NM
+		      ,B.JTIT_NM
+		      ,B.EMAIL_ADDR
+		      ,A.MAIL_SUBJECT
+		      ,A.CONTENT_PART
+		      ,A.PRJID
+		      ,A.START_DT
+		      ,A.END_DT
+		      ,A.CNT
+		  FROM (
+		        SELECT MAIL_ID
+		              ,MAIL_FROM_EMP_NO
+		              ,MAIL_SUBJECT
+		              ,CONTENT_PART
+		              ,PRJID
+		              ,START_DT
+		              ,END_DT
+		              ,COUNT(*) AS CNT
+		          FROM HYD_ABNORMAL_MAIL
+		         WHERE DATA_DEL_FG = 'N'
+		           AND MAIL_SEND_FG IN ('N','F')
+		         GROUP BY MAIL_ID
+		                 ,MAIL_FROM_EMP_NO
+		                 ,MAIL_SUBJECT
+		                 ,CONTENT_PART
+		                 ,PRJID
+		                 ,START_DT
+		                 ,END_DT       
+		       ) A
+		 INNER JOIN HYD_V_EMP_INFO B
+		         ON A.MAIL_FROM_EMP_NO = B.EMP_NO
+		        AND B.DATA_DEL_FG = 'N'
+		 ORDER BY A.MAIL_ID
+    </select>
+    
+    <!-- 대시보드 메일 수신자 조회 -->
+    <select id="selectDashMailReceiver" resultType="hashmap">
+		SELECT A.MAIL_ID
+		      ,A.MAIL_SEQ
+		      ,A.MAIL_TO_EMP_NO
+		      ,B.EMP_NM
+		      ,B.ORG_CD
+		      ,B.ORG_NM
+		      ,B.JTIT_NM
+		      ,B.EMAIL_ADDR
+		  FROM HYD_ABNORMAL_MAIL A
+		 INNER JOIN HYD_V_EMP_INFO B
+		         ON A.MAIL_TO_EMP_NO = B.EMP_NO
+		        AND A.DATA_DEL_FG = 'N'
+		        AND A.MAIL_SEND_FG IN ('N','F')
+		        AND B.DATA_DEL_FG = 'N'
+		        AND A.MAIL_ID = #{mailId}
+		 ORDER BY A.MAIL_ID
+		         ,A.MAIL_SEQ
+    </select>
+    
+    <!-- 대시보드 메일 상태 업데이트 -->
+    <update id="updateMailSendResult">
+		UPDATE HYD_ABNORMAL_MAIL
+		   SET MAIL_SEND_FG = #{sendResult}
+		      ,UPD_DTTM   = SYSDATE
+		 WHERE MAIL_ID = #{mailId}
+		   AND MAIL_SEQ = #{mailSeq}
+    </update>
+    
+    <!-- 대시보드 메일 상태 에러 업데이트 -->
+    <update id="updateMailSendError">
+		UPDATE HYD_ABNORMAL_MAIL
+		   SET MAIL_SEND_FG = 'E'
+		      ,UPD_DTTM   = SYSDATE
+		 WHERE MAIL_ID = #{mailId}
+		   AND MAIL_SEND_FG = 'N'
+    </update>
+</mapper>
