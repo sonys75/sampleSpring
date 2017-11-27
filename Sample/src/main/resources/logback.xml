@@ -1,0 +1,68 @@
+<configuration debug="false" scan="true" scanPeriod="5 seconds">
+	<!-- JMX -->
+	<property resource="portal.properties" />
+
+	<!-- 일반적인 FILE LOG PATTERN -->
+	<property name="FILE_LOG_PATTERN" value="[%-5p][%X{req.remoteHost}][%d{yyyy-MM-dd HH:mm:ss}][%C{1}.%M] %m%n" />
+	
+	<!-- CONSOLE LOG PATTERN -->
+	<property name="CONSOLE_LOG_PATTERN" value="[%-5p][%X{req.remoteHost}][%d{yyyy-MM-dd HH:mm:ss}][%C{1}.%M] %m%n" />
+	
+	<appender name="File" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <append>true</append>
+        <file>/u1/bea/applications/logs/${weblogic.Name}.log</file>
+        <rollingPolicy
+            class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>/u1/bea/applications/logs/${weblogic.Name}.log.%d{yyyyMMdd}
+            </fileNamePattern>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+    <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+    
+	<root level="ERROR">
+        <appender-ref ref="Console" />
+        <appender-ref ref="File" />
+    </root>
+
+    <logger name="org.springframework" additivity="false" level="INFO">
+        <appender-ref ref="Console" />
+        <appender-ref ref="File" />
+    </logger>
+    
+    <!-- 서버 반영시 변경 내용 -->
+    <logger name="jdbc.sqltiming" additivity="false" level="DEBUG">
+    <!-- <logger name="jdbc.sqltiming" additivity="false" level="DEBUG"> -->
+        <appender-ref ref="Console" />
+        <appender-ref ref="File" />
+    </logger>
+    <logger name="jdbc.resultsettable" additivity="false" level="DEBUG">
+    <!-- <logger name="jdbc.resultsettable" additivity="false" level="INFO"> -->
+        <appender-ref ref="Console" />
+        <appender-ref ref="File" />
+    </logger>
+
+    <logger name="com.skhynix.hydesign.portal" additivity="false" level="DEBUG">
+        <appender-ref ref="Console" />
+        <appender-ref ref="File" />
+    </logger>
+
+    <!-- 서버 반영시 변경 내용 -->
+    <logger name="com.skhynix.hydesign.portal.common.aop.LoggingAspect" additivity="false" level="DEBUG">
+    <!-- <logger name="com.skhynix.hydesign.portal.common.aop.LoggingAspect" additivity="false" level="DEBUG"> -->
+        <appender-ref ref="Console" />
+        <appender-ref ref="File" />
+    </logger>
+
+    <logger name="com.skhynix.hydesign.portal.common.aop.ThrowingAspect" additivity="false" level="INFO">
+        <appender-ref ref="Console" />
+        <appender-ref ref="File" />
+    </logger>
+
+</configuration>
