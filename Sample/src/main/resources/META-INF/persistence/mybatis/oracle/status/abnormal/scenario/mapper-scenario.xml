@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="status-abnormal-scenario">
+
+    <!-- 시나리오 목록 -->
+    <select id="scenarioList" resultType="hashmap">
+		SELECT ROWNUM
+		      ,A.SCENARIO_ID
+		      ,A.SCENARIO_TYPE_CD
+              ,FN_GET_CODE_NAME('2883', A.SCENARIO_TYPE_CD)
+               AS SCENARIO_TYPE_NM
+		      ,A.SCENARIO_NM
+		      ,A.SCENARIO_DESC
+		      ,A.SCENARIO_LEVEL_CD
+              ,FN_GET_CODE_NAME('2841', A.SCENARIO_LEVEL_CD)
+               AS SCENARIO_LEVEL_NM
+		      ,DECODE(A.SCENARIO_LIMIT_FG, 'Y', TO_CHAR(NVL(A.SCENARIO_LIMIT,0)), 'N/A') 
+		       AS SCENARIO_LIMIT
+		      ,A.SCENARIO_LIMIT_FG
+		      ,DECODE(A.SCENARIO_ENABLE_FG, 'Y', 'ON', 'OFF') 
+		       AS SCENARIO_ENABLE_FG
+		      ,A.DATA_DEL_FG
+		      ,A.INS_EMP_NO
+		      ,TO_CHAR(A.INS_DTTM, 'YYYY-MM-DD HH24:MI:SS') 
+		       AS INS_DTTM
+		      ,A.UPD_EMP_NO
+		      ,TO_CHAR(A.UPD_DTTM, 'YYYY-MM-DD HH24:MI:SS') 
+		       AS UPD_DTTM
+		  FROM HYD_ABNORMAL_SCENARIO A
+		 ORDER BY A.SCENARIO_ID
+    </select>
+    
+    <!--  시나리오 상세 조회 -->
+    <select id="selectScenarioDetail" resultType="hashmap">
+		SELECT A.SCENARIO_ID
+		      ,A.SCENARIO_TYPE_CD
+              ,FN_GET_CODE_NAME('2883', A.SCENARIO_TYPE_CD)
+               AS SCENARIO_TYPE_NM
+		      ,A.SCENARIO_NM
+		      ,A.SCENARIO_DESC
+		      ,A.SCENARIO_LEVEL_CD
+              ,FN_GET_CODE_NAME('2841', A.SCENARIO_LEVEL_CD)
+               AS SCENARIO_LEVEL_NM
+		      ,DECODE(A.SCENARIO_LIMIT_FG, 'Y', TO_CHAR(NVL(A.SCENARIO_LIMIT,0)), 'N/A') 
+		       AS SCENARIO_LIMIT
+		      ,A.SCENARIO_LIMIT_FG
+		      ,DECODE(A.SCENARIO_ENABLE_FG, 'Y', 'ON', 'OFF') 
+		       AS SCENARIO_ENABLE_FG
+		      ,A.DATA_DEL_FG
+		      ,A.INS_EMP_NO
+		      ,TO_CHAR(A.INS_DTTM, 'YYYY-MM-DD HH24:MI:SS') 
+		       AS INS_DTTM
+		      ,A.UPD_EMP_NO
+		      ,TO_CHAR(A.UPD_DTTM, 'YYYY-MM-DD HH24:MI:SS') 
+		       AS UPD_DTTM
+		  FROM HYD_ABNORMAL_SCENARIO A
+         WHERE A.SCENARIO_ID = #{scenarioId} 
+    </select>
+    
+    <!-- 시나리오 저장 -->
+    <update id="modifyScenario">
+		UPDATE HYD_ABNORMAL_SCENARIO
+		   SET SCENARIO_TYPE_CD = #{scenarioTypeCd}
+		      ,SCENARIO_NM = #{scenarioNm}
+		      ,SCENARIO_DESC = #{scenarioDesc}
+		      ,SCENARIO_LEVEL_CD = #{scenarioLevelCd}
+		      ,SCENARIO_LIMIT = DECODE(#{scenarioLimitFg},'Y',#{scenarioLimit},NULL)
+		      ,SCENARIO_LIMIT_FG = #{scenarioLimitFg}
+		      ,SCENARIO_ENABLE_FG = #{scenarioEnableFg}
+		      ,UPD_EMP_NO = #{sessEmpNo}
+		      ,UPD_DTTM = SYSDATE
+		 WHERE SCENARIO_ID = #{scenarioId}
+    </update>
+</mapper>
