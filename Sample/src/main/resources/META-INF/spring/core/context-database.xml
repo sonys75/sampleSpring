@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:aop="http://www.springframework.org/schema/aop"
+    xmlns:tx="http://www.springframework.org/schema/tx"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans   
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/aop
+        http://www.springframework.org/schema/aop/spring-aop.xsd
+        http://www.springframework.org/schema/tx
+        http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+
+<!-- JNDI LookUp 예제 -->
+<!-- 	<bean id="dataSource" class="org.springframework.jndi.JndiObjectFactoryBean"> -->
+<!--     	<property name="jndiName" value="JNDI_NAME"/> -->
+<!--     	<property name="resourceRef" value="true"/> -->
+<!-- 	</bean> -->
+
+    <!-- DBCP dataSource -->
+    <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+        <property name="driverClassName" value="${portal.db.driver}" />
+        <property name="url" value="${portal.db.url}" />
+        <property name="username" value="${portal.db.username}" />
+        <property name="password" value="${portal.db.pswd}" />
+        <property name="maxActive" value="100" />
+        <property name="maxIdle" value="100" />
+        <property name="minIdle" value="30" />
+        <property name="maxWait" value="-1" />
+        <property name="initialSize" value="30" />
+        <property name="poolPreparedStatements" value="true" />
+        <property name="maxOpenPreparedStatements" value="100" />
+        <property name="testOnBorrow" value="true" />
+        <property name="testOnReturn" value="false" />
+        <property name="testWhileIdle" value="false" />
+        <property name="validationQuery" value="${portal.db.validation.query}" />
+    </bean>
+    
+    <!-- DBCP dataSource JNDI-->
+    <!-- <bean id="dataSource" class="org.springframework.jndi.JndiObjectFactoryBean">
+        <property name="jndiName" value="DPUSER_DATA"/>
+        <property name="jndiEnvironment">
+           <props>
+             <prop key="java.naming.factory.initial">weblogic.jndi.WLInitialContextFactory</prop>
+             <prop key="java.naming.provider.url">${portal.datasource.url}</prop>
+           </props>
+        </property>
+    </bean> -->
+
+<!--     <bean id="dataSourceSpied" class="net.sf.log4jdbc.sql.jdbcapi.DataSourceSpy"> -->
+<!--         <constructor-arg ref="dataSource" /> -->
+<!--     </bean> -->
+
+    <!-- DBCP session factory -->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSource" />
+        <property name="configLocation" value="classpath:META-INF/persistence/mybatis/configuration.xml" />
+    </bean>
+
+    <!-- DBCP session -->
+    <bean id="sqlSession" class="org.mybatis.spring.SqlSessionTemplate">
+        <constructor-arg index="0" ref="sqlSessionFactory" />
+<!--         <constructor-arg index="1" value="SIMPLE" /> -->
+    </bean>
+
+    <!-- transaction -->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource" />
+    </bean>
+
+    <tx:advice id="txAdvice" transaction-manager="transactionManager">
+        <tx:attributes>
+            <tx:method name="create*" propagation="REQUIRED" rollback-for="Exception" />
+            <tx:method name="modify*" propagation="REQUIRED" rollback-for="Exception" />
+            <tx:method name="remove*" propagation="REQUIRED" rollback-for="Exception" />
+        </tx:attributes>
+    </tx:advice>
+
+    <aop:config>
+        <aop:pointcut id="txPointcut" expression="execution(public * com.skhynix.hydesign.portal.biz..*Service.*(..))" />
+        <aop:advisor pointcut-ref="txPointcut" advice-ref="txAdvice" />
+    </aop:config>
+    
+     <!-- SmartPIM dataSource -->
+    <bean id="dataSourceSmartPIM" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+        <property name="driverClassName" value="${portal.db.driver}" />
+        <property name="url" value="${smartpim.db.url}" />
+        <property name="username" value="${smartpim.db.username}" />
+        <property name="password" value="${smartpim.db.pswd}" />
+        <property name="maxActive" value="20" />
+        <property name="maxIdle" value="10" />
+        <property name="minIdle" value="10" />
+        <property name="maxWait" value="-1" />
+        <property name="initialSize" value="20" />
+        <property name="poolPreparedStatements" value="true" />
+        <property name="maxOpenPreparedStatements" value="100" />
+        <property name="testOnBorrow" value="true" />
+        <property name="testOnReturn" value="false" />
+        <property name="testWhileIdle" value="false" />
+        <property name="validationQuery" value="${smartpim.db.validation.query}" />
+    </bean>
+
+<!--     <bean id="dataSourceSpiedSmartPIM" class="net.sf.log4jdbc.sql.jdbcapi.DataSourceSpy"> -->
+<!--         <constructor-arg ref="dataSourceSmartPIM" /> -->
+<!--     </bean> -->
+
+    <!-- DBCP session factory -->
+    <bean id="sqlSessionFactorySmartPIM" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSourceSmartPIM" />
+        <property name="configLocation" value="classpath:META-INF/persistence/mybatis/configuration.xml" />
+    </bean>
+
+    <!-- DBCP session -->
+    <bean id="sqlSessionSmartPIM" class="org.mybatis.spring.SqlSessionTemplate">
+        <constructor-arg index="0" ref="sqlSessionFactorySmartPIM" />
+<!--         <constructor-arg index="1" value="SIMPLE" /> -->
+    </bean>
+
+    <!-- transaction -->
+    <bean id="transactionManagerSmartPIM" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSourceSmartPIM" />
+    </bean>
+
+    <tx:advice id="txAdviceSmartPIM" transaction-manager="transactionManagerSmartPIM">
+        <tx:attributes>
+            <tx:method name="create*" propagation="REQUIRED" rollback-for="Exception" />
+            <tx:method name="modify*" propagation="REQUIRED" rollback-for="Exception" />
+            <tx:method name="remove*" propagation="REQUIRED" rollback-for="Exception" />
+        </tx:attributes>
+    </tx:advice>
+    
+    
+    
+     <!-- IDM dataSource -->
+    <bean id="dataSourceIDM" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+        <property name="driverClassName" value="com.mysql.jdbc.Driver" />
+        <property name="url" value="${idm.db.url}" />
+        <property name="username" value="${idm.db.username}" />
+        <property name="password" value="${idm.db.pswd}" />
+        <property name="maxActive" value="20" />
+        <property name="maxIdle" value="10" />
+        <property name="minIdle" value="10" />
+        <property name="maxWait" value="-1" />
+        <property name="initialSize" value="20" />
+        <property name="poolPreparedStatements" value="true" />
+        <property name="maxOpenPreparedStatements" value="100" />
+        <property name="testOnBorrow" value="true" />
+        <property name="testOnReturn" value="false" />
+        <property name="testWhileIdle" value="false" />
+        <property name="validationQuery" value="${smartpim.db.validation.query}" />
+    </bean>
+
+<!--     <bean id="dataSourceSpiedIDM" class="net.sf.log4jdbc.sql.jdbcapi.DataSourceSpy"> -->
+<!--         <constructor-arg ref="dataSourceIDM" /> -->
+<!--     </bean> -->
+
+    <!-- DBCP session factory -->
+    <bean id="sqlSessionFactoryIDM" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSourceIDM" />
+        <property name="configLocation" value="classpath:META-INF/persistence/mybatis/configuration.xml" />
+    </bean>
+
+    <!-- DBCP session -->
+    <bean id="sqlSessionIDM" class="org.mybatis.spring.SqlSessionTemplate">
+        <constructor-arg index="0" ref="sqlSessionFactoryIDM" />
+<!--         <constructor-arg index="1" value="SIMPLE" /> -->
+    </bean>
+
+    <!-- transaction -->
+    <bean id="transactionManagerIDM" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSourceIDM" />
+    </bean>
+
+    <tx:advice id="txAdviceSmartPIM" transaction-manager="transactionManagerSmartPIM">
+        <tx:attributes>
+            <tx:method name="create*" propagation="REQUIRED" rollback-for="Exception" />
+            <tx:method name="modify*" propagation="REQUIRED" rollback-for="Exception" />
+            <tx:method name="remove*" propagation="REQUIRED" rollback-for="Exception" />
+        </tx:attributes>
+    </tx:advice>
+    
+   	<bean id="sqlFormatter" class="nexcore.sprout.foundry.log.sqllog.Log4JdbcCustomFormatter">
+		<property name="sqlPrefix" value="SQL::: " />
+    </bean>
+
+	<beans profile="sql_log">
+		<bean id="dataSource" class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+			<constructor-arg>
+				<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource"
+					destroy-method="close">
+					<property name="driverClassName" value="${portal.db.driver}" />
+			        <property name="url" value="${portal.db.url}" />
+			        <property name="username" value="${portal.db.username}" />
+			        <property name="password" value="${portal.db.pswd}" />
+			        <property name="maxActive" value="100" />
+			        <property name="maxIdle" value="100" />
+			        <property name="minIdle" value="30" />
+			        <property name="maxWait" value="-1" />
+			        <property name="initialSize" value="30" />
+			        <property name="poolPreparedStatements" value="true" />
+			        <property name="maxOpenPreparedStatements" value="100" />
+			        <property name="testOnBorrow" value="true" />
+			        <property name="testOnReturn" value="false" />
+			        <property name="testWhileIdle" value="false" />
+			        <property name="validationQuery" value="${portal.db.validation.query}" />
+				</bean>
+			</constructor-arg>
+			<property name="logFormatter" ref="sqlFormatter" />
+		</bean>
+		
+		<bean id="dataSourceSmartPIM" class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+			<constructor-arg>
+				<bean id="dataSourceSmartPIM" class="org.apache.commons.dbcp.BasicDataSource"
+					destroy-method="close">
+			        <property name="driverClassName" value="${portal.db.driver}" />
+			        <property name="url" value="${smartpim.db.url}" />
+			        <property name="username" value="${smartpim.db.username}" />
+			        <property name="password" value="${smartpim.db.pswd}" />
+			        <property name="maxActive" value="20" />
+			        <property name="maxIdle" value="10" />
+			        <property name="minIdle" value="10" />
+			        <property name="maxWait" value="-1" />
+			        <property name="initialSize" value="20" />
+			        <property name="poolPreparedStatements" value="true" />
+			        <property name="maxOpenPreparedStatements" value="100" />
+			        <property name="testOnBorrow" value="true" />
+			        <property name="testOnReturn" value="false" />
+			        <property name="testWhileIdle" value="false" />
+			        <property name="validationQuery" value="${smartpim.db.validation.query}" />
+				</bean>
+			</constructor-arg>
+			<property name="logFormatter" ref="sqlFormatter" />
+		</bean>
+
+		<bean id="dataSourceIDM" class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+			<constructor-arg>
+				<bean id="dataSourceIDM" class="org.apache.commons.dbcp.BasicDataSource"
+					destroy-method="close">
+			        <property name="driverClassName" value="com.mysql.jdbc.Driver" />
+			        <property name="url" value="${idm.db.url}" />
+			        <property name="username" value="${idm.db.username}" />
+			        <property name="password" value="${idm.db.pswd}" />
+			        <property name="maxActive" value="20" />
+			        <property name="maxIdle" value="10" />
+			        <property name="minIdle" value="10" />
+			        <property name="maxWait" value="-1" />
+			        <property name="initialSize" value="20" />
+			        <property name="poolPreparedStatements" value="true" />
+			        <property name="maxOpenPreparedStatements" value="100" />
+			        <property name="testOnBorrow" value="true" />
+			        <property name="testOnReturn" value="false" />
+			        <property name="testWhileIdle" value="false" />
+			        <property name="validationQuery" value="${smartpim.db.validation.query}" />
+				</bean>
+			</constructor-arg>
+			<property name="logFormatter" ref="sqlFormatter" />
+		</bean>		
+	</beans>
+</beans>
