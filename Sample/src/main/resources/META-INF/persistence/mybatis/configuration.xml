@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "http://mybatis.org/dtd/mybatis-3-config.dtd">
+
+<configuration>
+    <properties resource="portal.properties" />
+
+    <settings>
+        <!-- 기본키 생성 -->
+        <!-- REUSE : PreparedStatement 재사용 -->
+        <setting name="defaultExecutorType" value="REUSE" />
+<!--         <setting name="jdbcTypeForNull" value="NULL" /> -->
+        <setting name="callSettersOnNulls" value="true"/>
+    </settings>
+
+    <!-- typeAliases -->
+    <typeAliases>
+    </typeAliases>
+
+    <!-- SQL Mappers -->
+    <mappers>
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/main/mapper-main.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/my/mapper-my.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/login/mapper-login.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/email/mapper-email.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/task/mapper-task.xml" />
+
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/status/ctgr/mapper-ctgr.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/status/group/mapper-group.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/status/project/use/mapper-use.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/status/project/status/mapper-status.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/status/user/project/mapper-project.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/status/user/top/mapper-top.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/status/wuxi/mapper-wuxi-status.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/status/frametp/mapper-frametp-status.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/status/org/mapper-org.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/status/eod/mapper-eod.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/status/lieod/mapper-eod-license.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/status/teamServer/mapper-teamServer.xml" />
+
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/support/create/mapper-create.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/support/my/req/mapper-req.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/support/my/info/mapper-info.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/support/my/develop/mapper-develop.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/support/manage/req/mapper-req.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/support/manage/my/mapper-my.xml" />
+
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/tools/news/mapper-news.xml" />
+        <!-- 2015. 11. 09. information add -->
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/information/mapper-information.xml" />
+
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/community/newsletter/mapper-newsletter.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/community/blog/mapper-blog.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/community/qna/mapper-qna.xml" />
+
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/system/code/mapper-code.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/system/menu/mapper-menu.xml" />
+        <!-- 2016.01.04 add -->
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/system/banner/mapper-banner.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/system/ip/mapper-ip.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/support/ctgr/mapper-ctgr.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/support/define/mapper-define.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/support/represent/mapper-represent.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/support/status/mapper-status.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/soc/ctgr/mapper-ctgr.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/approve/approveStatistics/mapper-approveStatistics.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/approve/approveStatus/mapper-approveStatus.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/approve/approveAuth/mapper-approveAuth.xml" />
+        <!-- 2016.05.30 add -->
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/approve/approveAuto/mapper-approveAuto.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/community/newsletter/mapper-newsletter.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/community/bbs/mapper-bbs.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/community/email/mapper-systemMail.xml" /><!-- 2016.12.2 add -->
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/auth/user/mapper-user.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/auth/auth/mapper-auth.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/auth/access/mapper-access.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/auth/site/mapper-site.xml" /><!-- 2017.08.08 site add -->
+        <!-- 2015.11.12 add -->
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/auth/generate/mapper-generate.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/server/server/mapper-server.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/server/ecs/mapper-ecs.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/server/project/mapper-project.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/server/accountMng/mapper-accountMng.xml" />
+        <!-- 2016. 08. 12. groupServer add -->
+		<mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/server/grpSrv/mapper-grpSrv.xml" />
+        <!-- 2015. 11. 19. storage add -->
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/server/storage/mapper-storageAdmin.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/dlm/data/mapper-data.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/dlm/log/mapper-log.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/dlm/run/mapper-run.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/bbs/mapper-bbs.xml" />
+
+        <!--         Design Portal -->
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/common/mapper-common.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/work/project/develop/mapper-develop.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/work/project/registration/mapper-registration.xml" />
+        <!-- 2016.02.12. overSeaOpen add -->
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/work/project/overSeaOpen/mapper-overSeaOpen.xml" />
+        <!-- 2017.02.15. priority add -->
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/work/project/priority/mapper-priority.xml" />
+        <!-- 2016.07.15. groupServer add -->
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/work/group/develop/mapper-groupDevelop.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/work/group/devHist/mapper-groupHist.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/work/electronic/approval/mapper-approval.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/work/electronic/report/mapper-report.xml" />
+        <!-- 2016.05.27 entrust add -->
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/work/electronic/entrust/mapper-entrust.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/work/account/publicAccount/mapper-publicAccount.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/work/account/privateAccount/mapper-privateAccount.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/work/drawing/wuxi/mapper-wuxi.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/work/drawing/frame/mapper-frame.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/work/drawing/projectDrawing/mapper-projectDrawing.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/work/serverAccess/mapper-serverAccess.xml" />
+        <!-- 2015.11.16. storage add -->
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/work/storage/mapper-storage.xml" />
+
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/task/mapper-sync.xml" />
+
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/eod/mapper-eod.xml" />
+
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/external/ldap/mapper-ldap.xml" />
+
+        <!-- 2016.06.29 3D Virtual Fab add -->
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/work/drawing/thDrawing/mapper-vf.xml" />
+
+        <!-- 2016.08.10 Basic Library add -->
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/work/storage/basicLib/mapper-basicLib.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/server/basicLib/mapper-basicLibAdmin.xml" />
+
+        <!-- 2016.08.23 Support 장기개선/개발 add -->
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/support/manage/develop/mapper-develop.xml" />
+
+        <!-- 2016.08.25 HISOS CAD S/W add -->
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/support/hisos/cadSw/mapper-cadSw.xml" />
+
+        <!-- 2016.08.30 외부 사용자 계정 관리 add -->
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/work/account/extraAccount/mapper-extraAccount.xml" />
+
+        <!-- 해외접속 추가 -->
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/work/overseas/drawing/mapper-overseasDrawing.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/work/overseas/develop/mapper-overseasDevelop.xml" />
+
+        <!-- 해외사이트 정보 동기화 추가 -->
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/task/mapper-synchq.xml" />
+
+        <!-- 2016.09.06 외부 사용자 계정 Admin add -->
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/server/extraAccount/mapper-extraAccount.xml" />
+
+        <!-- 2016.09.06 외부 사용자 서버접속 -->
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/work/extraAcc/mapper-extraAcc.xml" />
+
+        <!-- 2016. 09. 08. 그룹서버 Admin -->
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/grpSrv/registration/mapper-grpSrv-registration.xml" />
+		<mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/grpSrv/transMapping/mapper-grpSrv-transMapping.xml" />
+
+		<!-- 2016. 11.21 화면보안 분리 -->
+    	<mapper resource="META-INF/persistence/mybatis/oracle/security/mapper-screenSecurity.xml" />
+
+		<!-- 2016. 11.21 화면보안 분리 -->
+
+		<!-- 2017.06.01  관리자 접속작업 관리 -->
+    	<mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/manage/mapper-adminlog.xml" />
+    	<!-- 2017.06.22  사용기간 초과 결재 건 삭제(반려) -->
+    	<mapper resource="META-INF/persistence/mybatis/${portal.db.type}/task/mapper-apprtask.xml" />
+
+
+
+		<!-- 2017.07.11 서버자원관리 추가 -->
+		<mapper resource="META-INF/persistence/mybatis/${portal.db.type}/work/systemReq/storageReq/mapper-storageReq.xml" />
+		<mapper resource="META-INF/persistence/mybatis/${portal.db.type}/work/systemReq/serverReq/mapper-serverReq.xml" />
+		<mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/server/systemReq/serverReq/mapper-serverReqAdmin.xml" />
+
+		<!-- 2017.08.17 개인화 대상 프로젝트 관리 추가 -->
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/auth/personalizationProject/mapper-personalizationProject.xml" />
+        <!-- 2017.08.17 개인화 그룹 관리 추가 -->
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/admin/auth/personalizationGroup/mapper-personalizationGroup.xml" />
+
+		<!-- 2017.08.16 이상징후 추가 -->
+		<mapper resource="META-INF/persistence/mybatis/${portal.db.type}/status/abnormal/scenario/mapper-scenario.xml" />
+		<mapper resource="META-INF/persistence/mybatis/${portal.db.type}/status/abnormal/monitor/mapper-monitor.xml" />
+		<mapper resource="META-INF/persistence/mybatis/${portal.db.type}/status/abnormal/monitor/mapper-monitor-mail.xml" />
+		<mapper resource="META-INF/persistence/mybatis/${portal.db.type}/status/abnormal/task/mapper-abnormal-task.xml" />
+		<mapper resource="META-INF/persistence/mybatis/${portal.db.type}/status/abnormal/management/mapper-management.xml" />
+		<mapper resource="META-INF/persistence/mybatis/${portal.db.type}/status/abnormal/status/mapper-status.xml" />
+		<mapper resource="META-INF/persistence/mybatis/${portal.db.type}/status/abnormal/block/mapper-block.xml" />
+
+        <!-- 2017.09.14 데이터 전송 추가 -->
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/work/dataTransfer/transferForeign/mapper-transferForeign.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/work/dataTransfer/transferPc/mapper-transferPc.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/work/dataTransfer/transferServer/mapper-transferServer.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/work/dataTransfer/transferData/mapper-transferData.xml" />
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/work/dataTransfer/transferStatus/mapper-transferStatus.xml" />
+
+        <!-- 2017.10.16 SDP 추가 -->
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/sdp/mapper-sdp.xml" />
+
+        <!-- 2017.10.17 프로젝트 권한 체크 추가 -->
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/auth/mapper-author-check.xml" />
+
+        <!-- 2017.11.23 개인화 이용현황 추가 -->
+        <mapper resource="META-INF/persistence/mybatis/${portal.db.type}/status/project/private/mapper-private.xml" />
+    </mappers>
+
+</configuration>
