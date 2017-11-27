@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+	
+    
+    <!-- ========================= [START] Sprout Event DEFINITIONS ======================== -->
+    <bean id="sproutEventPublisher"  class="nexcore.sprout.foundry.event.SproutEventPublisher">
+    	<property name="userIdFinder">	
+			<bean class="com.skhynix.hydesign.portal.common.util.UserIdFinder"/>
+		</property>
+	</bean>
+
+     <bean id="applicationEventMulticaster" class="nexcore.sprout.foundry.event.multicaster.AsyncEventListenerSupportMulticaster">
+	 	<property name="taskExecutor" ref="multicastExecutor"/>
+	 </bean>
+	<task:executor id="multicastExecutor" pool-size="100" keep-alive="60" queue-capacity="100"/>
+	<mvc:interceptors>
+		<mvc:interceptor>
+			<mvc:mapping path="/**" />
+			<mvc:exclude-mapping path="/resources/**" /> 
+			<ref bean="sproutEventPublisher"/>
+		</mvc:interceptor>
+	</mvc:interceptors>
+	<!-- ========================= [END] Sprout Event DEFINITIONS ======================== -->
+	 
+	<!-- ========================= [START] Access Log DEFINITIONS ======================== -->
+	<bean id="accessLogManager" class="nexcore.sprout.foundry.log.accesslog.AccessLogManager"/>
+	<!-- ========================= [END] Access Log DEFINITIONS ======================== -->
+</beans>
